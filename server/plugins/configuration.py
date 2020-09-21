@@ -49,19 +49,6 @@ class DBConfig:
         assert isinstance(self.dbfile, str) and os.path.exists(self.dbfile), "DB File must exist on disk!"
 
 
-class RepoConfig:
-    public: str
-    private: str
-    fallback: str
-
-    def __init__(self, subyaml: dict):
-        self.public = subyaml.get("public", "/x1/repos/asf/")
-        self.private = subyaml.get("private", "/x1/repos/private/")
-        self.fallback = subyaml.get("fallback", "")
-        assert isinstance(self.public, str) and os.path.isdir(self.public), "Public repo dir must exist!"
-        assert isinstance(self.private, str) and os.path.isdir(self.private), "Private repo dir must exist!"
-
-
 class GitHubConfig:
     token: str
 
