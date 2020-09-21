@@ -1,5 +1,15 @@
 """This is the ASF LDAP plugin for Boxer. It establishes an LDAP connection and reads project memberships.
    If a projects.yaml (or other override file specified) exists, it can read LDAP overrides from it for specific groups.
+
+   A typical override setting would involve either an alternate LDAP base or a hardcoded list of members/owners,
+   for instance:
+
+   infrastructure:
+     ldap: cn=infrastructure,ou=groups,ou=services,dc=apache,dc=org
+
+   foundation:
+     members: kp sk humbedooh
+     owners: sk
 """
 import bonsai
 import typing
