@@ -130,3 +130,6 @@ dmypy.json
 
 # PyCharm files
 .idea/
+
+# Don't copy live boxer.yaml
+server/boxer.yaml
