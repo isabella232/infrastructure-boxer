@@ -2,6 +2,7 @@ from __future__ import annotations
 import plugins.basetypes
 import plugins.ldap
 import plugins.github
+import plugins.repositories
 import os
 import typing
 
@@ -62,7 +63,7 @@ class Configuration:
     database: DBConfig
     tasks: TaskConfig
     oauth: OAuthConfig
-    repos: RepoConfig
+    repos: plugins.repositories.RepoConfig
     ldap: plugins.ldap.LDAPConfig
     github: GitHubConfig
 
@@ -71,7 +72,7 @@ class Configuration:
         self.database = DBConfig(yml.get("database", {}))
         self.tasks = TaskConfig(yml.get("tasks", {}))
         self.oauth = OAuthConfig(yml.get("oauth", {}))
-        self.repos = RepoConfig(yml.get("repositories", {}))
+        self.repos = plugins.repositories.RepoConfig(yml.get("repositories", {}))
         self.ldap = plugins.ldap.LDAPConfig(yml.get("ldap", {}))
         self.github = GitHubConfig(yml.get("github", {}))
 
