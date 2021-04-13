@@ -294,7 +294,7 @@ class GitHubOrganisation:
         data = {
             "name": f"{team} committers",
         }
-        txt = await self.org.api_put(url, jsdata=data)
+        txt = await self.api_post(url, jsdata=data)
         if txt:
             js = json.loads(txt)
             assert 'id' in js and js['id'], \
