@@ -238,6 +238,7 @@ class GitHubOrganisation:
         return repos
 
     async def get_mfa_status(self) -> dict:
+        """Get MFA status for all org members, return as a dict[str, bool] of people and whether 2fa is enabled"""
         query = """
         {
             organization(login: "%s") {
