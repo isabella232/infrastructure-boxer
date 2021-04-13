@@ -12,6 +12,7 @@ class ServerConfig:
     def __init__(self, subyaml: dict):
         self.ip: str = subyaml.get("bind", "0.0.0.0")
         self.port: int = int(subyaml.get("port", 8080))
+        self.traceback: bool = bool(subyaml.get('traceback', False))
 
 
 class TaskConfig:
