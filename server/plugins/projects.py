@@ -122,7 +122,6 @@ class Organization:
 async def compile_data(
     ldap: plugins.ldap.LDAPConfig,
     repositories: typing.List[plugins.repositories.Repository],
-    dbhandle: asfpy.sqlite.DB = None,
 ) -> Organization:
     """Compiles a comprehensive list of projects and people associated with them"""
     org = Organization()

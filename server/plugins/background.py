@@ -65,12 +65,12 @@ async def run_tasks(server: plugins.basetypes.Server):
             github_repos = await asf_github_org.load_repositories()
         async with ProgTimer("Compiling list of projects, repos and memberships"):
             try:
-                asf_org = await plugins.projects.compile_data(server.config.ldap, server.data.repositories, server.database.client)
+                asf_org = await plugins.projects.compile_data(server.config.ldap, server.data.repositories)
                 server.data.projects = asf_org.projects
                 server.data.people = asf_org.committers
             except Exception as e:
                 print(
-                    "Could not fetch repositories - github down or not connected: %s"
+                    "Could not fetch repositories - ldap source down or not connected: %s"
                     % e
                 )
 
