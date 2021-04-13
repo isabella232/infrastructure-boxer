@@ -19,8 +19,8 @@ class Committer:
         self, asf_id: str, linkdb: asfpy.sqlite.DB,
     ):
         self.asf_id = asf_id
-        self.repositories = set()
-        self.projects = set()
+        self.repositories: typing.Set[str] = set()
+        self.projects: typing.Set[str] = set()
         if linkdb:
             row = linkdb.fetchone("ids", limit=1, asfid=asf_id)
         else:
@@ -49,22 +49,16 @@ class Committer:
 
 
 class Project:
-    name: str
-    committers: typing.List[Committer]
-    pmc: typing.List[Committer]
-    public_repos: typing.List[str]
-    private_repos: typing.List[str]
-
     def __init__(self, org: "Organization", name: str, committers: list, pmc: list):
-        self.name = name
-        self.committers = []
+        self.name: str = name
+        self.committers: typing.List[Committer] = []
         for committer in committers:
             account = org.add_committer(committer)
             self.committers.append(account)
             account.projects.add(self)
-        self.pmc = pmc
-        self.public_repos = []
-        self.private_repos = []
+        self.pmc: typing.List[Committer] = pmc
+        self.public_repos: typing.List[str] = []
+        self.private_repos: typing.List[str] = []
 
     def __repr__(self):
         return f"Project<{self.name}>"
@@ -98,14 +92,11 @@ class Project:
 
 
 class Organization:
-    committers: typing.List[Committer]
-    projects: typing.Dict[str, Project]
-    linkdb: typing.Optional[asfpy.sqlite.DB]
 
     def __init__(self, linkdb: asfpy.sqlite.DB = None):
-        self.committers = list()
-        self.projects = dict()
-        self.linkdb = linkdb
+        self.committers: typing.List[Committer] = list()
+        self.projects: typing.Dict[str, Project] = dict()
+        self.linkdb: typing.Optional[asfpy.sqlite.DB] = linkdb
 
     def add_project(self, name: str, committers: typing.List[str], pmc: typing.List[str]) -> typing.Optional[Project]:
         if name and name not in self.projects:
