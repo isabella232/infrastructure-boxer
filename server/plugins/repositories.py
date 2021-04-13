@@ -19,19 +19,24 @@ class RepoConfig:
 class Repository:
     private: bool
     filename: str
+    filepath: str
     project: str
 
-    def __init__(self, private, filename):
+    def __init__(self, private, filepath):
         self.private = private
-        self.filename = filename.replace('.git', '')
-        m = re.match(r"^(?:incubator-)?(empire-db|[^-.]+)-?.*(?:\.git)?$", filename)
+        self.filename = os.path.basename(filepath).replace('.git', '')
+        self.filepath = filepath
+        m = re.match(r"^(?:incubator-)?(empire-db|[^-.]+)-?.*(?:\.git)?$", self.filename)
         if m:
             self.project = m.group(1)
         else:
-            self.project = filename.split('-', 1)[0]  # ????
+            self.project = self.filename.split('-', 1)[0]  # ????
 
     def __str__(self):
         return self.filename
+
+    def __repr__(self):
+        return f"Repository<{self.filepath}>"
 
 
 async def list_all(cfg: RepoConfig) -> list:
@@ -47,14 +52,16 @@ async def list_all(cfg: RepoConfig) -> list:
     # Add public repos, should all be in one big directory
     for repo in [x for x in os.listdir(cfg.public) if x.endswith('.git')]:
         public_found += 1
-        repositories.append(Repository(False, repo))
+        filepath = os.path.join(cfg.public, repo)
+        repositories.append(Repository(False, filepath))
 
     # Add private repos, should be in individual sub dirs, one per project
     for project in os.listdir(cfg.private):
         path = os.path.join(cfg.private, project)
         for repo in [x for x in os.listdir(path) if x.endswith('.git')]:
+            filepath = os.path.join(cfg.private, project, repo)
             private_found += 1
-            repositories.append(Repository(True, repo))
+            repositories.append(Repository(True, filepath))
 
     # If fallback from old server, add those into the mix
     if cfg.fallback:
