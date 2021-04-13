@@ -111,7 +111,7 @@ class Server(plugins.basetypes.Server):
                     session.database = None
                 headers["content-type"] = "application/json"
                 if output and not isinstance(output, aiohttp.web.Response):
-                    jsout = await self.runners.run(json.dumps, output, indent=2)
+                    jsout = json.dumps(output, indent=2)
                     headers["Content-Length"] = str(len(jsout))
                     return aiohttp.web.Response(headers=headers, status=200, text=jsout)
                 elif isinstance(output, aiohttp.web.Response):
@@ -132,7 +132,7 @@ class Server(plugins.basetypes.Server):
                     traceback.format_exception(exc_type, exc_value, exc_traceback)
                 )
                 # By default, we print the traceback to the user, for easy debugging.
-                if self.config.ui.traceback:
+                if self.config.server.traceback:
                     return aiohttp.web.Response(
                         headers=headers, status=500, text="API error occurred: \n" + err
                     )
