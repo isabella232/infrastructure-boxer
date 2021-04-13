@@ -122,7 +122,7 @@ class Server(plugins.basetypes.Server):
                     )
             # If a handler hit an exception, we need to print that exception somewhere,
             # either to the web client or stderr:
-            except:
+            except:  # This is a broad exception on purpose!
                 if session.database:
                     self.dbpool.put_nowait(session.database)
                     self.dbpool.task_done()
