@@ -63,7 +63,7 @@ class GitHubOrganisation:
                     assert rv.status == 204, f"Unexpected retun code for DELETE on {url}: {rv.status}"
                     return txt
 
-    async def api_put(self, url: str, jsdata: dict = {}):
+    async def api_put(self, url: str, jsdata: typing.Optional[dict] = None):
         if DEBUG:
             print("[DEBUG] PUT", url)
         else:
@@ -73,7 +73,7 @@ class GitHubOrganisation:
                     assert rv.status == 204, f"Unexpected retun code for PUT on {url}: {rv.status}"
                     return txt
 
-    async def api_post(self, url: str, jsdata: dict = {}):
+    async def api_post(self, url: str, jsdata: typing.Optional[dict] = None):
         if DEBUG:
             print("[DEBUG] POST", url)
         else:
@@ -502,4 +502,3 @@ class GitHubTeam:
         ), "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         url = f"https://api.github.com/organizations/{self.org.orgid}/team/{self.id}/repos/{self.org.login}/{reponame}"
         await self.org.api_put(url, {'permission': 'write'})
-
