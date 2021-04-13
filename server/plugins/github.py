@@ -2,6 +2,7 @@
 import aiohttp
 import typing
 import json
+import plugins.projects
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 DEBUG = True  # We don't wanna do the PUT/DELETE right now, so let's not...
@@ -286,22 +287,39 @@ class GitHubOrganisation:
         print("%u with 2FA, %u without!" % (mfa_enabled, mfa_disabled))
         return mfa
 
-    async def add_team(self, team: str):
+    async def add_team(self, project: str, role: str = "committers"):
         """Adds a new GitHub team to the organization"""
         assert self.orgid, "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
-        assert team, "GitHub team needs a name to be added to the organization"
+        assert project, "GitHub team needs a name to be added to the organization"
         url = f"https://api.github.com/orgs/{self.orgid}/teams"
         data = {
-            "name": f"{team} committers",
+            "name": f"{project} {role}",
         }
         txt = await self.api_post(url, jsdata=data)
         if txt:
             js = json.loads(txt)
             assert 'id' in js and js['id'], \
                 "GitHub did not respond with a Team ID for the new team, something wrong?: \n" + txt
-            print(f"Team '{team} committers' with ID {js['id']} created.")
+            print(f"Team '{project} {role}' with ID {js['id']} created.")
         else:
             raise AssertionError("Github did not respond with a JSON payload!!")
+
+    async def setup_teams(self, projects: typing.Dict[str, plugins.projects.Project]):
+        """Looks for and sets up missing teams on GitHub"""
+        for project in projects.values():
+
+            # Check if public team needs to be made
+            committer_team = f"{project.name} committers"
+            if project.public_repos and committer_team not in self.teams:
+                print(f"Team '{project.name} committers' was not found on GitHub, setting it up for the first time.")
+                await self.add_team(project.name, "committers")
+
+            # Check if private (pmc) team needs to be made
+            pmc_team = f"{project.name} pmc"
+            if project.public_repos and pmc_team not in self.teams:
+                print(
+                    f"Team '{project.name} pmc' was not found on GitHub, setting it up for the first time.")
+                await self.add_team(project.name, "pmc")
 
 
 class GitHubTeam:
@@ -342,7 +360,7 @@ class GitHubTeam:
         return self.slug == other.slug
 
     def __hash__(self):
-        return self.slug
+        return self.slug.lower()
 
     async def get_members(self):
         """Fetches all members of a team using GraphQL"""
