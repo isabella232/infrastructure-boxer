@@ -1,6 +1,7 @@
 """Miscellaneous GitHub classes for Boxer"""
 import aiohttp
 import typing
+import json
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 DEBUG = True  # We don't wanna do the PUT/DELETE right now, so let's not...
@@ -58,8 +59,9 @@ class GitHubOrganisation:
         else:
             async with aiohttp.ClientSession(headers=self.api_headers) as session:
                 async with session.delete(url) as rv:
-                    await rv.text()
+                    txt = await rv.text()
                     assert rv.status == 204, f"Unexpected retun code for DELETE on {url}: {rv.status}"
+                    return txt
 
     async def api_put(self, url: str, jsdata: dict = {}):
         if DEBUG:
@@ -67,8 +69,19 @@ class GitHubOrganisation:
         else:
             async with aiohttp.ClientSession(headers=self.api_headers) as session:
                 async with session.put(url, json=jsdata) as rv:
-                    await rv.text()
+                    txt = await rv.text()
                     assert rv.status == 204, f"Unexpected retun code for PUT on {url}: {rv.status}"
+                    return txt
+
+    async def api_post(self, url: str, jsdata: dict = {}):
+        if DEBUG:
+            print("[DEBUG] POST", url)
+        else:
+            async with aiohttp.ClientSession(headers=self.api_headers) as session:
+                async with session.post(url, json=jsdata) as rv:
+                    txt = await rv.text()
+                    assert rv.status == 201, f"Unexpected retun code for POST on {url}: {rv.status}"
+                    return txt
 
     def get_team(self, team: str, private: bool) -> typing.Optional["GitHubTeam"]:
         """Locate a GitHub team and return it"""
@@ -272,6 +285,23 @@ class GitHubOrganisation:
         print("%u with 2FA, %u without!" % (mfa_enabled, mfa_disabled))
         return mfa
 
+    async def add_team(self, team: str):
+        """Adds a new GitHub team to the organization"""
+        assert self.orgid, "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
+        assert team, "GitHub team needs a name to be added to the organization"
+        url = f"https://api.github.com/orgs/{self.orgid}/teams"
+        data = {
+            "name": f"{team} committers",
+        }
+        txt = await self.org.api_put(url, jsdata=data)
+        if txt:
+            js = json.loads(txt)
+            assert 'id' in js and js['id'], \
+                "GitHub did not respond with a Team ID for the new team, something wrong?: \n" + txt
+            print(f"Team '{team} committers' with ID {js['id']} created.")
+        else:
+            raise AssertionError("Github did not respond with a JSON payload!!")
+
 
 class GitHubTeam:
     org: GitHubOrganisation
@@ -434,7 +464,7 @@ class GitHubTeam:
             self.org.orgid
         ), "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         url = f"https://api.github.com/organizations/{self.org.orgid}/team/{self.id}/memberships/{github_id}"
-        self.org.api_put(url)
+        await self.org.api_put(url)
 
     async def remove_member(self, github_id: str):
         """Removes a new person from this github team"""
@@ -442,7 +472,7 @@ class GitHubTeam:
             self.org.orgid
         ), "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         url = f"https://api.github.com/organizations/{self.org.orgid}/team/{self.id}/memberships/{github_id}"
-        self.org.api_delete(url)
+        await self.org.api_delete(url)
 
     async def set_repositories(self, repositories: typing.List[str]) -> typing.Tuple[list, list]:
         """Assigns a list of repositories to a team. Returns a tuple of repos added and removed from the team"""
@@ -462,7 +492,7 @@ class GitHubTeam:
             self.org.orgid
         ), "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         url = f"https://api.github.com/organizations/{self.org.orgid}/team/{self.id}/repos/{self.org.login}/{reponame}"
-        self.org.api_delete(url)
+        await self.org.api_delete(url)
 
     async def add_repository(self, reponame: str):
         """Adds a single repository to the team"""
@@ -470,5 +500,5 @@ class GitHubTeam:
             self.org.orgid
         ), "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         url = f"https://api.github.com/organizations/{self.org.orgid}/team/{self.id}/repos/{self.org.login}/{reponame}"
-        self.org.api_put(url, {'permission': 'write'})
+        await self.org.api_put(url, {'permission': 'write'})
 
