@@ -8,14 +8,16 @@ import datetime
 class Committer:
     def save(self, dbhandle: asfpy.sqlite.DB):
         document = {
-            'asfid': self.asf_id,
-            'githubid': self.github_id,
-            'mfa': 1 if self.github_mfa else 0,
-            'updated': datetime.datetime.now(),
+            "asfid": self.asf_id,
+            "githubid": self.github_id,
+            "mfa": 1 if self.github_mfa else 0,
+            "updated": datetime.datetime.now(),
         }
         dbhandle.update("ids", document, asfid=self.asf_id)
 
-    def __init__(self, asf_id: str, linkdb: asfpy.sqlite.DB,):
+    def __init__(
+        self, asf_id: str, linkdb: asfpy.sqlite.DB,
+    ):
         self.asf_id = asf_id
         self.repositories = set()
         self.projects = set()
@@ -24,8 +26,8 @@ class Committer:
         else:
             row = None
         if row:
-            self.github_id = row['githubid']
-            self.github_mfa = bool(row['mfa'])
+            self.github_id = row["githubid"]
+            self.github_mfa = bool(row["mfa"])
             self.real_name = "Foo Bar"
         else:
             self.github_id = None
@@ -53,7 +55,7 @@ class Project:
     public_repos: typing.List[str]
     private_repos: typing.List[str]
 
-    def __init__(self, org: 'Organization',  name: str, committers: list, pmc: list):
+    def __init__(self, org: "Organization", name: str, committers: list, pmc: list):
         self.name = name
         self.committers = []
         for committer in committers:
@@ -125,7 +127,12 @@ class Organization:
                 if committer.asf_id == asf_id:
                     return committer
 
-async def compile_data(ldap: plugins.ldap.LDAPConfig, repositories: typing.List[plugins.repositories.Repository], dbhandle: asfpy.sqlite.DB = None) -> Organization:
+
+async def compile_data(
+    ldap: plugins.ldap.LDAPConfig,
+    repositories: typing.List[plugins.repositories.Repository],
+    dbhandle: asfpy.sqlite.DB = None,
+) -> Organization:
     """Compiles a comprehensive list of projects and people associated with them"""
     org = Organization()
     discovered = 0
@@ -136,7 +143,7 @@ async def compile_data(ldap: plugins.ldap.LDAPConfig, repositories: typing.List[
                 committers, pmc = await lc.get_members(project)
                 if committers and pmc:
                     discovered += 1
-                    #print(f"Discovered project: {project} - {len(committers)} committers, {len(pmc)} in pmc")
+                    # print(f"Discovered project: {project} - {len(committers)} committers, {len(pmc)} in pmc")
                     if discovered % 50 == 0:
                         print("Discovered %u projects so far..." % discovered)
                 org.add_project(name=project, committers=committers, pmc=pmc)
