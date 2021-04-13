@@ -42,7 +42,8 @@ async def run_tasks(server: plugins.basetypes.Server):
 
     while True:
         now = time.time()
-        asf_github_org = plugins.github.GitHubOrganisation(login='apache', personal_access_token=server.config.github.token)
+        print(f"Processing GitHub organization '{server.config.github.org}'...")
+        asf_github_org = plugins.github.GitHubOrganisation(login=server.config.github.org, personal_access_token=server.config.github.token)
         await asf_github_org.get_id()  # For security reasons, we must call this before we can add/remove members
         limit, used = await asf_github_org.rate_limit_rest()
         print("Used %u out of %u REST tokens this hour." % (used, limit))
@@ -115,3 +116,4 @@ async def run_tasks(server: plugins.basetypes.Server):
         time_taken = time.time() - now
         print("Background task run finished after %u seconds. Used %u GraphQL tokens for this." % (time_taken, used_gql))
         await asyncio.sleep(server.config.tasks.refresh_rate)
+

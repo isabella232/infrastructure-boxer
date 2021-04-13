@@ -52,9 +52,11 @@ class DBConfig:
 
 class GitHubConfig:
     token: str
+    org: str
 
     def __init__(self, subyaml: dict):
         self.token = subyaml.get("token", "")
+        self.org = subyaml.get("org", "asftest")
         assert isinstance(self.token, str) and len(self.token) == 40, "GitHub token must be a valid token!"
 
 
