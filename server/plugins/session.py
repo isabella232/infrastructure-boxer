@@ -24,7 +24,6 @@ import uuid
 
 import aiohttp.web
 
-import plugins.database
 import plugins.basetypes
 import copy
 import typing
@@ -91,7 +90,6 @@ async def get_session(
     server: plugins.basetypes.Server, request: aiohttp.web.BaseRequest
 ) -> SessionObject:
     session_id = None
-    session = None
     now = int(time.time())
     if request.headers.get("cookie"):
         for cookie_header in request.headers.getall("cookie"):
@@ -110,63 +108,13 @@ async def get_session(
         if (now - x_session.last_accessed) > MAX_SESSION_AGE:
             del server.data.sessions[session_id]
         else:
-
-            # Make a copy so we don't have a race condition with the database pool object
-            # In case the session is used twice within the same loop
+            x_session.last_accessed = now
             session = copy.copy(x_session)
             session.database = await server.dbpool.get()
 
-            # Do we need to update the timestamp in ES?
-            if (now - session.last_accessed) > SAVE_SESSION_INTERVAL:
-                session.last_accessed = now
-                await save_session(session)
-
             return session
-
     # If not in local memory, start a new session object
     session = SessionObject(server)
-    session.database = await server.dbpool.get()
-
-    # If a cookie was supplied, look for a session object in ES
-    if session_id and session.database:
-        try:
-            session_doc = await session.database.get(
-                session.database.dbs.session, id=session_id
-            )
-            last_update = session_doc["_source"]["updated"]
-            session.cookie = session_id
-            # Check that this cookie ain't too old. If it is, delete it and return bare-bones session object
-            if (now - last_update) > MAX_SESSION_AGE:
-                session.database.delete(
-                    index=session.database.dbs.session, id=session_id
-                )
-                return session
-
-            # Get CID and fecth the account data
-            cid = session_doc["_source"]["cid"]
-            if cid:
-                account_doc = await session.database.get(
-                    session.database.dbs.account, id=cid
-                )
-                creds = account_doc["_source"]["credentials"]
-                internal = account_doc["_source"]["internal"]
-
-                # Set session data
-                session.cid = cid
-                session.last_accessed = last_update
-                creds["authoritative"] = (
-                    internal.get("oauth_provider")
-                    in server.config.oauth.authoritative_domains
-                )
-                creds["oauth_provider"] = internal.get("oauth_provider", "generic")
-                creds["oauth_data"] = internal.get("oauth_data", {})
-                session.credentials = SessionCredentials(creds)
-
-                # Save in memory storage
-                server.data.sessions[session_id] = session
-
-        except plugins.database.DBError:
-            pass
     return session
 
 
@@ -181,56 +129,4 @@ async def set_session(server: plugins.basetypes.Server, cid, **credentials):
     session.credentials = SessionCredentials(credentials)
     server.data.sessions[session_id] = session
 
-    # Grab temporary DB handle since session objects at init do not have this
-    # We just need this to be able to save the session in ES.
-    session.database = await server.dbpool.get()
-
-    # Save session and account data
-    await save_session(session)
-    await save_credentials(session)
-
-    # Put DB handle back into the pool
-    server.dbpool.put_nowait(session.database)
     return cookie["boxer"].OutputString()
-
-
-async def save_session(session: SessionObject):
-    """Save a session object in the database"""
-    assert session.database, "Database not connected!"
-    await session.database.index(
-        index=session.database.dbs.session,
-        id=session.cookie,
-        body={
-            "cookie": session.cookie,
-            "cid": session.cid,
-            "updated": session.last_accessed,
-        },
-    )
-
-
-async def remove_session(session: SessionObject):
-    """Remove a session object in the ES database"""
-    assert session.database, "Database not connected!"
-    await session.database.delete(index=session.database.dbs.session, id=session.cookie)
-
-
-async def save_credentials(session: SessionObject):
-    """Save a user account object in the ES database"""
-    assert session.database, "Database not connected!"
-    assert session.credentials, "Session object without credentials, cannot save!"
-    await session.database.index(
-        index=session.database.dbs.account,
-        id=session.cid,
-        body={
-            "cid": session.cid,
-            "credentials": {
-                "email": session.credentials.email,
-                "name": session.credentials.name,
-                "uid": session.credentials.uid,
-            },
-            "internal": {
-                "oauth_provider": session.credentials.oauth_provider,
-                "oauth_data": session.credentials.oauth_data,
-            },
-        },
-    )
