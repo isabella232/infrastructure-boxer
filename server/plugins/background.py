@@ -55,7 +55,7 @@ async def run_tasks(server: plugins.basetypes.Server):
                 server.data.repositories = await plugins.repositories.list_all(server.config.repos)
             except Exception as e:
                 print(
-                    "Could not fetch repositories - gitbox down or not connected: %s"
+                    "Could not fetch repositories - source server down or not connected: %s"
                     % e
                 )
                 await asyncio.sleep(10)
@@ -70,7 +70,7 @@ async def run_tasks(server: plugins.basetypes.Server):
                 server.data.people = asf_org.committers
             except Exception as e:
                 print(
-                    "Could not fetch repositories - gitbox down or not connected: %s"
+                    "Could not fetch repositories - github down or not connected: %s"
                     % e
                 )
 
