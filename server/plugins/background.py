@@ -14,11 +14,9 @@ import plugins.github
 class ProgTimer:
     """A simple task timer that displays when a sub-task is begun, ends, and the time taken."""
 
-    start: float
-    title: str
-
     def __init__(self, title):
-        self.title = title
+        self.title: str = title
+        self.time: float = time.time()
 
     async def __aenter__(self):
         sys.stdout.write("[%s] %s...\n" % (datetime.datetime.now().strftime("%H:%M:%S"), self.title))
