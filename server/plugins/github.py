@@ -550,4 +550,4 @@ class GitHubTeam:
             self.org.orgid
         ), "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         url = f"https://api.github.com/organizations/{self.org.orgid}/team/{self.id}/repos/{self.org.login}/{reponame}"
-        await self.org.api_put(url, {'permission': 'write'})
+        await self.org.api_put(url, {'permission': 'push'})
