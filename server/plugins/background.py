@@ -130,6 +130,27 @@ async def run_tasks(server: plugins.basetypes.Server):
                     else:
                         print(f"Could not find an ASF project for team {team.slug}!!")
 
+        async with ProgTimer("Adjusting GitHub team repositories according to gitbox repos"):
+            for team in github_teams:
+                if team.type == "committers":
+                    asf_project = server.data.projects.get(team.project)
+                    if asf_project:
+                        managed_repos = [x.filename for x in asf_project.public_repos if x.filename in github_repos]
+                        added, removed = await team.set_repositories(managed_repos)
+                        for repo in added:
+                            print(f"- Added {repo}.git to GitHub team {team.slug}")
+                        for repo in removed:
+                            print(f"- Removed {repo}.git from GitHub team {team.slug}")
+                elif team.type == "pmc":
+                    asf_project = server.data.projects.get(team.project)
+                    if asf_project:
+                        managed_repos = [x.filename for x in asf_project.private_repos if x.filename in github_repos ]
+                        added, removed = await team.set_repositories(managed_repos)
+                        for repo in added:
+                            print(f"- Added {repo}.git to GitHub team {team.slug}")
+                        for repo in removed:
+                            print(f"- Removed {repo}.git from GitHub team {team.slug}")
+
         alimit, aused = await asf_github_org.rate_limit_graphql()
         used_gql = aused
         if used < aused:
