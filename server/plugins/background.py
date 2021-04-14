@@ -65,7 +65,7 @@ async def run_tasks(server: plugins.basetypes.Server):
             github_repos = await asf_github_org.load_repositories()
         async with ProgTimer("Compiling list of projects, repos and memberships"):
             try:
-                asf_org = await plugins.projects.compile_data(server.config.ldap, server.data.repositories)
+                asf_org = await plugins.projects.compile_data(server.config.ldap, server.data.repositories, server.database.client)
                 server.data.projects = asf_org.projects
                 server.data.people = asf_org.committers
             except Exception as e:
@@ -83,6 +83,8 @@ async def run_tasks(server: plugins.basetypes.Server):
                     if person.github_mfa is not server.data.mfa[person.github_id]:
                         person.github_mfa = server.data.mfa[person.github_id]
                         person.save()  # Update sqlite db if changed
+                else:
+                    person.github_mfa = False  # Flag as no MFA if person was not found
 
         async with ProgTimer("Getting GitHub teams and their members"):
             github_teams = await asf_github_org.load_teams()
@@ -96,13 +98,32 @@ async def run_tasks(server: plugins.basetypes.Server):
                 if team.type == 'committers':  # All we care about right now is the commit groups
                     asf_project = server.data.projects.get(team.project)
                     if asf_project:
-                        ldap_github_team = asf_project.public_github_team()
-                        if asf_project.committers:  # Only set if we got LDAP data back
-                            added, removed = await team.set_membership(ldap_github_team)
-                            if added:
-                                print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
-                            if removed:
-                                print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
+                        if asf_project.public_repos:
+                            ldap_github_team = asf_project.public_github_team()
+                            if asf_project.committers:  # Only set if we got LDAP data back
+                                added, removed = await team.set_membership(ldap_github_team)
+                                if added:
+                                    print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
+                                if removed:
+                                    print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
+                        else:
+                            print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
+                            continue
+                    else:
+                        print(f"Could not find an ASF project for team {team.slug}!!")
+
+                # PMC Groups
+                elif team.type == 'pmc':  # All we care about right now is the commit groups
+                    asf_project = server.data.projects.get(team.project)
+                    if asf_project:
+                        if asf_project.private_repos:
+                            ldap_github_team = asf_project.private_github_team()
+                            if asf_project.pmc:  # Only set if we got LDAP data back
+                                added, removed = await team.set_membership(ldap_github_team)
+                                if added:
+                                    print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
+                                if removed:
+                                    print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
                         else:
                             print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
                             continue
