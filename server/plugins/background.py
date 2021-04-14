@@ -33,6 +33,73 @@ class ProgTimer:
         )
 
 
+async def adjust_teams(server: plugins.basetypes.Server):
+    """Adjusts GitHub teams:
+    - Adds new LDAP members with MFA enabled
+    - Removes members no longer in LDAP or no longer with MFA enabled
+    """
+    async with ProgTimer("Adjusting GitHub teams according to LDAP/MFA"):
+        for team in server.data.teams:
+            if team.type == 'committers':  # All we care about right now is the commit groups
+                asf_project = server.data.projects.get(team.project)
+                if asf_project:
+                    if asf_project.public_repos:
+                        ldap_github_team = asf_project.public_github_team()
+                        if asf_project.committers:  # Only set if we got LDAP data back
+                            added, removed = await team.set_membership(ldap_github_team)
+                            if added:
+                                print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
+                            if removed:
+                                print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
+                    else:
+                        print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
+                        continue
+                else:
+                    print(f"Could not find an ASF project for team {team.slug}!!")
+
+            # PMC Groups
+            elif team.type == 'pmc':  # All we care about right now is the commit groups
+                asf_project = server.data.projects.get(team.project)
+                if asf_project:
+                    if asf_project.private_repos:
+                        ldap_github_team = asf_project.private_github_team()
+                        if asf_project.pmc:  # Only set if we got LDAP data back
+                            added, removed = await team.set_membership(ldap_github_team)
+                            if added:
+                                print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
+                            if removed:
+                                print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
+                    else:
+                        print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
+                        continue
+                else:
+                    print(f"Could not find an ASF project for team {team.slug}!!")
+
+
+async def adjust_repositories(server: plugins.basetypes.Server):
+    """Adjusts repositories, adding/removing disparities between GitBox and GitHub"""
+    async with ProgTimer("Adjusting GitHub team repositories according to gitbox repos"):
+        for team in server.data.teams:
+            if team.type == "committers":
+                asf_project = server.data.projects.get(team.project)
+                if asf_project:
+                    managed_repos = [x.filename for x in asf_project.public_repos if x.filename in server.data.github_repos]
+                    added, removed = await team.set_repositories(managed_repos)
+                    for repo in added:
+                        print(f"- Added {repo}.git to GitHub team {team.slug}")
+                    for repo in removed:
+                        print(f"- Removed {repo}.git from GitHub team {team.slug}")
+            elif team.type == "pmc":
+                asf_project = server.data.projects.get(team.project)
+                if asf_project:
+                    managed_repos = [x.filename for x in asf_project.private_repos if x.filename in server.data.github_repos]
+                    added, removed = await team.set_repositories(managed_repos)
+                    for repo in added:
+                        print(f"- Added {repo}.git to GitHub team {team.slug}")
+                    for repo in removed:
+                        print(f"- Removed {repo}.git from GitHub team {team.slug}")
+
+
 async def run_tasks(server: plugins.basetypes.Server):
     """
         Runs long-lived background data gathering tasks such as gathering repositories, projects and ldap/mfa data.
@@ -62,7 +129,7 @@ async def run_tasks(server: plugins.basetypes.Server):
                 continue
 
         async with ProgTimer("Gathering list of repositories on GitHub"):
-            github_repos = await asf_github_org.load_repositories()
+            server.data.github_repos = await asf_github_org.load_repositories()
         async with ProgTimer("Compiling list of projects, repos and memberships"):
             try:
                 asf_org = await plugins.projects.compile_data(server.config.ldap, server.data.repositories, server.database.client)
@@ -87,69 +154,13 @@ async def run_tasks(server: plugins.basetypes.Server):
                     person.github_mfa = False  # Flag as no MFA if person was not found
 
         async with ProgTimer("Getting GitHub teams and their members"):
-            github_teams = await asf_github_org.load_teams()
-            server.data.teams = github_teams
+            server.data.teams = await asf_github_org.load_teams()
 
         async with ProgTimer("Looking for missing/invalid GitHub teams"):
             await asf_github_org.setup_teams(server.data.projects)
 
-        async with ProgTimer("Adjusting GitHub teams according to LDAP/MFA"):
-            for team in github_teams:
-                if team.type == 'committers':  # All we care about right now is the commit groups
-                    asf_project = server.data.projects.get(team.project)
-                    if asf_project:
-                        if asf_project.public_repos:
-                            ldap_github_team = asf_project.public_github_team()
-                            if asf_project.committers:  # Only set if we got LDAP data back
-                                added, removed = await team.set_membership(ldap_github_team)
-                                if added:
-                                    print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
-                                if removed:
-                                    print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
-                        else:
-                            print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
-                            continue
-                    else:
-                        print(f"Could not find an ASF project for team {team.slug}!!")
-
-                # PMC Groups
-                elif team.type == 'pmc':  # All we care about right now is the commit groups
-                    asf_project = server.data.projects.get(team.project)
-                    if asf_project:
-                        if asf_project.private_repos:
-                            ldap_github_team = asf_project.private_github_team()
-                            if asf_project.pmc:  # Only set if we got LDAP data back
-                                added, removed = await team.set_membership(ldap_github_team)
-                                if added:
-                                    print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
-                                if removed:
-                                    print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
-                        else:
-                            print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
-                            continue
-                    else:
-                        print(f"Could not find an ASF project for team {team.slug}!!")
-
-        async with ProgTimer("Adjusting GitHub team repositories according to gitbox repos"):
-            for team in github_teams:
-                if team.type == "committers":
-                    asf_project = server.data.projects.get(team.project)
-                    if asf_project:
-                        managed_repos = [x.filename for x in asf_project.public_repos if x.filename in github_repos]
-                        added, removed = await team.set_repositories(managed_repos)
-                        for repo in added:
-                            print(f"- Added {repo}.git to GitHub team {team.slug}")
-                        for repo in removed:
-                            print(f"- Removed {repo}.git from GitHub team {team.slug}")
-                elif team.type == "pmc":
-                    asf_project = server.data.projects.get(team.project)
-                    if asf_project:
-                        managed_repos = [x.filename for x in asf_project.private_repos if x.filename in github_repos ]
-                        added, removed = await team.set_repositories(managed_repos)
-                        for repo in added:
-                            print(f"- Added {repo}.git to GitHub team {team.slug}")
-                        for repo in removed:
-                            print(f"- Removed {repo}.git from GitHub team {team.slug}")
+        await adjust_teams(server)
+        await adjust_repositories(server)
 
         alimit, aused = await asf_github_org.rate_limit_graphql()
         used_gql = aused
