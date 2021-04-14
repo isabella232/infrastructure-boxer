@@ -5,7 +5,7 @@ import json
 import plugins.projects
 
 GRAPHQL_URL = "https://api.github.com/graphql"
-DEBUG = True  # We don't wanna do the PUT/DELETE right now, so let's not...
+DEBUG = False  # We don't wanna do the PUT/DELETE right now, so let's not...
 
 
 class GitHubOrganisation:
@@ -71,7 +71,7 @@ class GitHubOrganisation:
             async with aiohttp.ClientSession(headers=self.api_headers) as session:
                 async with session.put(url, json=jsdata) as rv:
                     txt = await rv.text()
-                    assert rv.status == 204, f"Unexpected retun code for PUT on {url}: {rv.status}"
+                    assert rv.status in [200, 204], f"Unexpected retun code for PUT on {url}: {rv.status}"
                     return txt
 
     async def api_post(self, url: str, jsdata: typing.Optional[dict] = None):
@@ -287,11 +287,11 @@ class GitHubOrganisation:
         print("%u with 2FA, %u without!" % (mfa_enabled, mfa_disabled))
         return mfa
 
-    async def add_team(self, project: str, role: str = "committers"):
+    async def add_team(self, project: str, role: str = "committers") -> typing.Optional[int]:
         """Adds a new GitHub team to the organization"""
         assert self.orgid, "Parent GitHubOrganization needs a call to .get_id() prior to membership updates!"
         assert project, "GitHub team needs a name to be added to the organization"
-        url = f"https://api.github.com/orgs/{self.orgid}/teams"
+        url = f"https://api.github.com/orgs/{self.login}/teams"
         data = {
             "name": f"{project} {role}",
         }
@@ -301,6 +301,7 @@ class GitHubOrganisation:
             assert 'id' in js and js['id'], \
                 "GitHub did not respond with a Team ID for the new team, something wrong?: \n" + txt
             print(f"Team '{project} {role}' with ID {js['id']} created.")
+            return js['id']
         else:
             raise AssertionError("Github did not respond with a JSON payload!!")
 
@@ -312,14 +313,44 @@ class GitHubOrganisation:
             committer_team = f"{project.name} committers"
             if project.public_repos and committer_team not in self.teams:
                 print(f"Team '{project.name} committers' was not found on GitHub, setting it up for the first time.")
-                await self.add_team(project.name, "committers")
+                teamid = await self.add_team(project.name, "committers")
+                nodedata = {
+                    "node": {
+                        "databaseId": teamid,
+                        "slug": committer_team.replace(" ", "-"),
+                        "name": committer_team,
+                        "members": {
+                            "edges": []
+                        },
+                        "repositories": {
+                            "edges": []
+                        },
+                    },
+                }
+                newteam = GitHubTeam(self, nodedata)
+                self.teams.append(newteam)
 
             # Check if private (pmc) team needs to be made
             pmc_team = f"{project.name} pmc"
             if project.public_repos and pmc_team not in self.teams:
                 print(
                     f"Team '{project.name} pmc' was not found on GitHub, setting it up for the first time.")
-                await self.add_team(project.name, "pmc")
+                teamid = await self.add_team(project.name, "pmc")
+                nodedata = {
+                    "node": {
+                        "databaseId": teamid,
+                        "slug": pmc_team.replace(" ", "-"),
+                        "name": pmc_team,
+                        "members": {
+                            "edges": []
+                        },
+                        "repositories": {
+                            "edges": []
+                        },
+                    },
+                }
+                newteam = GitHubTeam(self, nodedata)
+                self.teams.append(newteam)
 
 
 class GitHubTeam:
@@ -354,13 +385,13 @@ class GitHubTeam:
 
     def __eq__(self, other):
         if isinstance(other, str):
-            return other == self.slug
+            return other == self.name
         if not isinstance(other, GitHubTeam):
             return False
-        return self.slug == other.slug
+        return self.name == other.slug
 
     def __hash__(self):
-        return self.slug.lower()
+        return self.name.lower()
 
     async def get_members(self):
         """Fetches all members of a team using GraphQL"""
