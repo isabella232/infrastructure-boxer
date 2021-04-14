@@ -332,7 +332,7 @@ class GitHubOrganisation:
 
             # Check if private (pmc) team needs to be made
             pmc_team = f"{project.name} pmc"
-            if project.public_repos and pmc_team not in self.teams:
+            if project.private_repos and pmc_team not in self.teams:
                 print(
                     f"Team '{project.name} pmc' was not found on GitHub, setting it up for the first time.")
                 teamid = await self.add_team(project.name, "pmc")
