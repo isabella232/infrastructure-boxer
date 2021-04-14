@@ -66,6 +66,7 @@ class InterData:
 
     def __init__(self):
         self.repositories: list = []
+        self.github_repos: list = []
         self.sessions: dict = {}
         self.people: dict = {}
         self.projects: dict = {}
