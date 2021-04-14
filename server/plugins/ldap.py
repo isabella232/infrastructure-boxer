@@ -68,13 +68,26 @@ class LDAPClient:
     async def get_members(self, group: str):
         """Async fetching of members/owners of a standard project group."""
         ldap_base = self.config.groupbase % group
+        ldap_owner_base = None
         members = []
         owners = []
+
+        member_attr = "member"
+        owner_attr = "owner"
 
         if self.ldap_override and group in self.ldap_override:
             if "ldap" in self.ldap_override[group]:
                 ldap_base = self.ldap_override[group]["ldap"]
                 print("Using LDAP override for group %s: %s" % (group, ldap_base))
+            if "ldap_owner" in self.ldap_override[group]:
+                ldap_owner_base = self.ldap_override[group]["ldap_owner"]
+                print("Using LDAP override for PMC group %s: %s" % (group, ldap_owner_base))
+            if "member_attr" in self.ldap_override[group]:
+                member_attr = self.ldap_override[group]["member_attr"]
+                print("Using LDAP member attribute override for group %s: %s" % (group, member_attr))
+            if "owner_attr" in self.ldap_override[group]:
+                owner_attr = self.ldap_override[group]["owner_attr"]
+                print("Using LDAP owner attribute override for group %s: %s" % (group, owner_attr))
             if "members" in self.ldap_override[group]:
                 members = self.ldap_override[group]["members"]
                 print(f"Using membership override for group {group}: {members}")
@@ -86,20 +99,30 @@ class LDAPClient:
         try:
             assert self.connection, "LDAP Not connected"
             rv = await self.connection.search(
-                ldap_base, bonsai.LDAPSearchScope.SUBTREE, None, ["member", "owner"]
+                ldap_base, bonsai.LDAPSearchScope.SUBTREE, None, [member_attr, owner_attr]
             )
             if rv:
-                if not members and "member" in rv[0]:
-                    for member in rv[0]["member"]:
+                if not members and member_attr in rv[0]:
+                    for member in rv[0][member_attr]:
                         m = UID_RE.match(member)
                         if m:
                             members.append(m.group(1))
 
-                if not owners and "owner" in rv[0]:
-                    for owner in rv[0]["owner"]:
+                if not ldap_owner_base and owners and owner_attr in rv[0]:
+                    for owner in rv[0][owner_attr]:
                         m = UID_RE.match(owner)
                         if m:
                             owners.append(m.group(1))
+            if ldap_owner_base:
+                rv = await self.connection.search(
+                    ldap_owner_base, bonsai.LDAPSearchScope.SUBTREE, None, [owner_attr]
+                )
+                if rv:
+                    if not owners and owner_attr in rv[0]:
+                        for owner in rv[0][owner_attr]:
+                            m = UID_RE.match(owner)
+                            if m:
+                                owners.append(m.group(1))
             return list(sorted(members)), list(sorted(owners))
 
         except Exception as e:
