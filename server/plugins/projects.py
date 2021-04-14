@@ -56,7 +56,11 @@ class Project:
             account = org.add_committer(committer)
             self.committers.append(account)
             account.projects.add(self)
-        self.pmc: typing.List[Committer] = pmc
+        self.pmc: typing.List[Committer] = []
+        for pmc in pmc or []:
+            account = org.add_committer(pmc)
+            self.pmc.append(account)
+            account.projects.add(self)
         self.public_repos: typing.List[str] = []
         self.private_repos: typing.List[str] = []
 
@@ -122,9 +126,10 @@ class Organization:
 async def compile_data(
     ldap: plugins.ldap.LDAPConfig,
     repositories: typing.List[plugins.repositories.Repository],
+    linkdb: typing.Optional[asfpy.sqlite.DB]
 ) -> Organization:
     """Compiles a comprehensive list of projects and people associated with them"""
-    org = Organization()
+    org = Organization(linkdb=linkdb)
     discovered = 0
     async with plugins.ldap.LDAPClient(ldap) as lc:
         for repo in repositories:
