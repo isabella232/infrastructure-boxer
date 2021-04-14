@@ -17,7 +17,7 @@ import re
 import yaml
 import os
 
-UID_RE = re.compile(r"^uid=([^,]+)")
+UID_RE = re.compile(r"^(?:uid=)?([^,]+)")
 
 
 class LDAPConfig:
