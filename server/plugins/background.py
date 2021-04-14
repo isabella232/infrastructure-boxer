@@ -45,9 +45,6 @@ async def adjust_teams(server: plugins.basetypes.Server):
                                 print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
                             if removed:
                                 print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
-                    else:
-                        print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
-                        continue
                 else:
                     print(f"Could not find an ASF project for team {team.slug}!!")
 
@@ -63,9 +60,6 @@ async def adjust_teams(server: plugins.basetypes.Server):
                                 print(f"Added {len(added)} members to team {team.slug}: {', '.join(added)}")
                             if removed:
                                 print(f"Removed {len(removed)} members from team {team.slug}: {', '.join(removed)}")
-                    else:
-                        print(f"Could not find LDAP data for ASF project {team.project}, ignoring for now!")
-                        continue
                 else:
                     print(f"Could not find an ASF project for team {team.slug}!!")
 
