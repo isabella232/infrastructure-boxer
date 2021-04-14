@@ -97,9 +97,10 @@ class LDAPClient:
         if owners and members:
             return owners, members
         try:
+            attrs = set([member_attr, owner_attr])
             assert self.connection, "LDAP Not connected"
             rv = await self.connection.search(
-                ldap_base, bonsai.LDAPSearchScope.SUBTREE, None, [member_attr, owner_attr]
+                ldap_base, bonsai.LDAPSearchScope.SUBTREE, None, list(attrs)
             )
             if rv:
                 if not members and member_attr in rv[0]:
@@ -107,8 +108,7 @@ class LDAPClient:
                         m = UID_RE.match(member)
                         if m:
                             members.append(m.group(1))
-
-                if not ldap_owner_base and owners and owner_attr in rv[0]:
+                if (not ldap_owner_base) and not owners and owner_attr in rv[0]:
                     for owner in rv[0][owner_attr]:
                         m = UID_RE.match(owner)
                         if m:
