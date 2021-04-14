@@ -19,8 +19,8 @@ class Committer:
         self, asf_id: str, linkdb: asfpy.sqlite.DB,
     ):
         self.asf_id = asf_id
-        self.repositories: typing.Set[str] = set()
-        self.projects: typing.Set[str] = set()
+        self.repositories: typing.Set[plugins.repositories.Repository] = set()
+        self.projects: typing.Set[Project] = set()
         if linkdb:
             row = linkdb.fetchone("ids", limit=1, asfid=asf_id)
         else:
@@ -57,26 +57,26 @@ class Project:
             self.committers.append(account)
             account.projects.add(self)
         self.pmc: typing.List[Committer] = []
-        for pmc in pmc or []:
-            account = org.add_committer(pmc)
+        for owner in pmc or []:
+            account = org.add_committer(owner)
             self.pmc.append(account)
             account.projects.add(self)
-        self.public_repos: typing.List[str] = []
-        self.private_repos: typing.List[str] = []
+        self.public_repos: typing.List[plugins.repositories.Repository] = []
+        self.private_repos: typing.List[plugins.repositories.Repository] = []
 
     def __repr__(self):
         return f"Project<{self.name}>"
 
-    def add_repository(self, reponame: str, private: bool):
+    def add_repository(self, repo: plugins.repositories.Repository, private: bool):
         """Adds a repository to a project and assigns the repo to the commmitter/PMC group as applicable"""
         if private:
-            self.private_repos.append(reponame)
+            self.private_repos.append(repo)
             for account in self.pmc:
-                account.repositories.add(reponame)
+                account.repositories.add(repo)
         else:
-            self.public_repos.append(reponame)
+            self.public_repos.append(repo)
             for account in self.committers:
-                account.repositories.add(reponame)
+                account.repositories.add(repo)
 
     def public_github_team(self):
         """Returns the GitHub IDs of everyone that should be on the GitHub team for this project"""
