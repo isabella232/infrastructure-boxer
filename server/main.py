@@ -101,8 +101,6 @@ class Server(plugins.basetypes.Server):
                 # it could be a custom response, which we just pass along to the client.
                 output = await self.handlers[handler].exec(self, session, indata)
                 if session.database:
-                    self.dbpool.put_nowait(session.database)
-                    self.dbpool.task_done()
                     session.database = None
                 headers["content-type"] = "application/json"
                 if output and not isinstance(output, aiohttp.web.Response):
@@ -119,8 +117,6 @@ class Server(plugins.basetypes.Server):
             # either to the web client or stderr:
             except:  # This is a broad exception on purpose!
                 if session.database:
-                    self.dbpool.put_nowait(session.database)
-                    self.dbpool.task_done()
                     session.database = None
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 err = "\n".join(
