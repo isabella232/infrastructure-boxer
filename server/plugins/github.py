@@ -331,16 +331,16 @@ class GitHubOrganisation:
                 self.teams.append(newteam)
 
             # Check if private (pmc) team needs to be made
-            pmc_team = f"{project.name} pmc"
-            if project.private_repos and pmc_team not in self.teams:
+            private_team = f"{project.name} private"
+            if project.private_repos and private_team not in self.teams:
                 print(
-                    f"Team '{project.name} pmc' was not found on GitHub, setting it up for the first time.")
-                teamid = await self.add_team(project.name, "pmc")
+                    f"Team '{project.name} private' was not found on GitHub, setting it up for the first time.")
+                teamid = await self.add_team(project.name, "private")
                 nodedata = {
                     "node": {
                         "databaseId": teamid,
-                        "slug": pmc_team.replace(" ", "-"),
-                        "name": pmc_team,
+                        "slug": private_team.replace(" ", "-"),
+                        "name": private_team,
                         "members": {
                             "edges": []
                         },

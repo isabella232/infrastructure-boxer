@@ -34,7 +34,7 @@ async def adjust_teams(server: plugins.basetypes.Server):
     """
     async with ProgTimer("Adjusting GitHub teams according to LDAP/MFA"):
         for team in server.data.teams:
-            if team.type == "committers":  # All we care about right now is the commit groups
+            if team.type == "committers":
                 asf_project = server.data.projects.get(team.project)
                 if asf_project:
                     if asf_project.public_repos:
@@ -49,7 +49,7 @@ async def adjust_teams(server: plugins.basetypes.Server):
                     print(f"Could not find an ASF project for team {team.slug}!!")
 
             # PMC Groups
-            elif team.type == "pmc":  # All we care about right now is the commit groups
+            elif team.type == "private":
                 asf_project = server.data.projects.get(team.project)
                 if asf_project:
                     if asf_project.private_repos:
@@ -79,7 +79,7 @@ async def adjust_repositories(server: plugins.basetypes.Server):
                         print(f"- Added {repo}.git to GitHub team {team.slug}")
                     for repo in removed:
                         print(f"- Removed {repo}.git from GitHub team {team.slug}")
-            elif team.type == "pmc":
+            elif team.type == "private":
                 asf_project = server.data.projects.get(team.project)
                 if asf_project:
                     managed_repos = [
