@@ -52,12 +52,7 @@ class Server(plugins.basetypes.Server):
         self.data = plugins.configuration.InterData()
         self.handlers = dict()
         self.database = plugins.database.Database(self.config.database)
-        self.dbpool = asyncio.Queue()
         self.server = None
-
-        # Make a pool of 5 database connections for async queries
-        for _ in range(1, 5):
-            self.dbpool.put_nowait(plugins.database.Database(self.config.database))
 
         # Load each URL endpoint
         for endpoint_file in os.listdir("endpoints"):
