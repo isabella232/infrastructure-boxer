@@ -106,9 +106,19 @@ async def run_tasks(server: plugins.basetypes.Server):
             login=server.config.github.org, personal_access_token=server.config.github.token
         )
         await asf_github_org.get_id()  # For security reasons, we must call this before we can add/remove members
-        limit, used = await asf_github_org.rate_limit_rest()
+        limit, used, resets = await asf_github_org.rate_limit_rest()
+        while used >= (limit-25):
+            how_long_to_wait = resets - int(time.time()-1)
+            print("GitHub REST rate limit reached, waiting till %u (%u seconds)" % (resets, how_long_to_wait))
+            await asyncio.sleep(how_long_to_wait)
+            limit, used, resets = await asf_github_org.rate_limit_rest()
         print("Used %u out of %u REST tokens this hour." % (used, limit))
-        limit, used = await asf_github_org.rate_limit_graphql()
+        limit, used, resets = await asf_github_org.rate_limit_graphql()
+        while used >= (limit-25):
+            how_long_to_wait = resets - int(time.time()-1)
+            print("GitHub GraphQL rate limit reached, waiting till %u (%u seconds)" % (resets, how_long_to_wait))
+            await asyncio.sleep(how_long_to_wait)
+            limit, used, resets = await asf_github_org.rate_limit_graphql()
         print("Used %u out of %u GraphQL tokens this hour." % (used, limit))
 
         async with ProgTimer("Gathering list of repositories on gitbox"):
@@ -152,7 +162,7 @@ async def run_tasks(server: plugins.basetypes.Server):
         await adjust_teams(server)
         await adjust_repositories(server)
 
-        alimit, aused = await asf_github_org.rate_limit_graphql()
+        alimit, aused, aresets = await asf_github_org.rate_limit_graphql()
         used_gql = aused
         if used < aused:
             used_gql -= used

@@ -3,6 +3,7 @@ import aiohttp
 import typing
 import json
 import plugins.projects
+import dateutil.parser
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 DEBUG = False  # We don't wanna do the PUT/DELETE right now, so let's not...
@@ -100,7 +101,7 @@ class GitHubOrganisation:
             url = "https://api.github.com/rate_limit"
             async with session.get(url) as rv:
                 js = await rv.json()
-                return js["rate"]["limit"], js["rate"]["used"]
+                return js["rate"]["limit"], js["rate"]["used"], js["rate"]["reset"]
 
     async def rate_limit_graphql(self):
         """Fetches the hourly GraphQL API limit and how many uses have been expended this hour."""
@@ -118,7 +119,8 @@ class GitHubOrganisation:
         async with aiohttp.ClientSession(headers=self.api_headers) as session:
             async with session.post(GRAPHQL_URL, json={"query": query}) as rv:
                 js = await rv.json()
-                return js["data"]["rateLimit"]["limit"], js["data"]["rateLimit"]["used"]
+                resets = dateutil.parser.parse(js["data"]["rateLimit"]["resetAt"]).timestamp()
+                return js["data"]["rateLimit"]["limit"], js["data"]["rateLimit"]["used"], resets
 
     async def load_teams(self) -> typing.List["GitHubTeam"]:
         """Loads all GitHub teams in this organization using GraphQL"""
