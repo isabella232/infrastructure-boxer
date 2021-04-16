@@ -21,11 +21,11 @@ async def process(
     formdata["client_secret"] = server.config.oauth.github_client_secret
 
     async with aiohttp.ClientSession() as session:
-            headers = {'Accept': 'application/json'}
+            headers = {'Accept': 'application/json', "Authorization": f"token {server.config.github.token}"}
             async with session.post("https://github.com/login/oauth/access_token", headers=headers, data=formdata) as rv:
                  response = await rv.json()
                  if 'access_token' in response:
-                    async with session.get("https://api.github.com/user", headers = {'Authorization': "token %s" % response['access_token']}) as rv:
+                    async with session.get("https://api.github.com/user", headers={'Authorization': "token %s" % response['access_token']}) as rv:
                         js = await rv.json()
                         js["oauth_domain"] = "github.com"
                         # Full name and email address might not always be available to us. Fake it till you make it.
