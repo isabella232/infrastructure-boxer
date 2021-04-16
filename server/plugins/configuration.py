@@ -68,7 +68,7 @@ class InterData:
         self.repositories: list = []
         self.github_repos: list = []
         self.sessions: dict = {}
-        self.people: dict = {}
+        self.people: list = []
         self.projects: dict = {}
         self.mfa: dict = {}
         self.teams: typing.List[plugins.github.GitHubTeam] = []
