@@ -38,6 +38,18 @@ function logout() {
     GET("/api/preferences?logout=true").then(() => location.href = '/');
 }
 
+function check_github_invite(canvas) {
+    GET("/api/preferences.json").then((js) => {
+        if (js.credentials.github_org_member) {
+            canvas.innerText = "GitHub organization invite recorded! Hang tight, we're loading things for you...";
+            window.setTimeout(() => { location.search = ''; location.reload();}, 4000);
+        } else {
+            window.setTimeout(() => { check_github_invite(canvas); }, 10000);
+        }
+    });
+}
+
+
 function invite_github(canvas) {
     GET("/api/invite").then(
         (js) => {
@@ -45,10 +57,21 @@ function invite_github(canvas) {
                 canvas.innerText = "An invitation has been sent to your email address. You may also review it here: "
                 let a = document.createElement("a");
                 a.setAttribute("href", "https://github.com/asftest/");
+                a.setAttribute("target", "_new");
                 a.innerText = "Review invitation";
                 canvas.appendChild(a);
+                let p = document.createElement('p');
+                p.innerText = "Once you have accepted your invitation, the Boxer service will start including you in the teams you have been assigned to. It may take up to five minutes before this happens. This page will reload once your invitation has been recorded as accepted, sit tight...";
+                canvas.appendChild(p);
+                check_github_invite(canvas);
             } else {
-                canvas.innerText = "Oops! Something went wrong, you may already have an invitation pending."
+                if (js.reauth === true) {
+                    canvas.innerText = "It looks like something went wrong with the invitation. You have likely previously been a member of the organization and then left. To fix this, we'll need to re-authenticate you on GitHub. Please hang on while we sort that out....";
+                    window.setTimeout(() => { location.search = ''; location.reload();}, 3000);
+                }
+                else {
+                    canvas.innerText = "Oops! Something went wrong, you may already have an invitation pending."
+                }
             }
         }
     )
@@ -83,6 +106,7 @@ async function prime() {
         oauth = await POST("/api/oauth.json", formdata);
         if (oauth.okay) {
             location.href = "boxer.html";
+            return
         } else {
             alert("Something went wrong... :(");
         }
@@ -99,8 +123,8 @@ async function prime() {
 
 
     // Not authed via GitHub yet
-    if (!login.github && !login.credentials.github_login) {
-        canvas.innerText = "Auth on GitHub, foo! ";
+    if (!login.github || !login.github.login) {
+        canvas.innerText = "Please authenticate yourself on GitHub before we can continue: ";
         let a = document.createElement("a");
         a.setAttribute("href", "#");
         a.addEventListener("click", begin_oauth_github);
@@ -118,6 +142,10 @@ async function prime() {
     if (!login.github || login.credentials.github_login != login.github.login) {
         canvas.innerText = `You are authed on GitHub as ${login.credentials.github_login}, but this account has not been linked to your Apache account yet.`;
         return
+    }
+
+    if (!formdata.action) {
+        canvas.innerText = `Welcome, ${login.credentials.fullname.split(' ')[0]}! You are authed as ${login.github.login} on GitHub.`;
     }
 }
 
