@@ -13,7 +13,7 @@ class Committer:
             "mfa": 1 if self.github_mfa else 0,
             "updated": datetime.datetime.now(),
         }
-        dbhandle.update("ids", document, asfid=self.asf_id)
+        dbhandle.upsert("ids", document, asfid=self.asf_id)
 
     def __init__(
         self, asf_id: str, linkdb: asfpy.sqlite.DB,
