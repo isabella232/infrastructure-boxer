@@ -21,6 +21,7 @@ import plugins.basetypes
 import plugins.session
 import plugins.oauthGeneric
 import plugins.oauthGithub
+import plugins.projects
 import typing
 import aiohttp.web
 import hashlib
@@ -48,13 +49,39 @@ async def process(
         oatype = "apache"
 
     if rv and oatype == "apache":
-        cookie = await plugins.session.set_session(server, uid=rv["uid"], name=rv["fullname"], email=rv["email"])
+        ghid = None
+        person = plugins.projects.Committer(asf_id=rv["uid"], linkdb=server.database.client)
+        if person and person.github_id:
+            ghid = person.github_id
+            if person not in server.data.people:
+                server.data.people.append(person)
+
+        cookie = await plugins.session.set_session(server, uid=rv["uid"], name=rv["fullname"], email=rv["email"],github_id=ghid)
         return aiohttp.web.Response(
             headers={"set-cookie": cookie, "content-type": "application/json"}, status=200, text='{"okay": true}',
         )
     elif rv and oatype == "github" and session.credentials:
         session.credentials.github_login = rv["login"]
         session.credentials.github_id = rv["id"]
+
+        in_db = False
+        for p in server.data.people:
+            if p.asf_id == session.credentials.uid:
+                p.github_id = session.credentials.github_login
+                p.github_mfa = False
+                p.save(server.database.client)
+                in_db = True
+                break
+        if not in_db:
+            person = plugins.projects.Committer(
+                asf_id=session.credentials.uid,
+                linkdb=server.database.client,
+            )
+            person.github_id = session.credentials.github_login
+            person.real_name = session.credentials.name
+            person.github_mfa = False
+            person.save(server.database.client)
+            server.data.people.append(person)
         return {
             "okay": True,
             "message": f"Authed as {session.credentials.github_login}"
