@@ -25,6 +25,18 @@ import aiohttp
 async def process(
         server: plugins.basetypes.Server, session: plugins.session.SessionObject, indata: dict
 ) -> dict:
+    if not session.credentials.github_id:
+        if session.credentials.github_login:
+            for person in server.data.people:
+                if person.github_login == session.credentials.github_login:
+                    print(f"Removing stale GitHub login from user {person.asf_id}")
+                    person.github_login = ""
+                    person.save(server.database.client)
+                    break
+        return {
+            "okay": False,
+            "message": "Could not invite to Org - missing numerical GitHub ID.",
+        }
     if session.credentials and session.credentials.github_login:
         invite_url = f"https://api.github.com/orgs/{server.config.github.org}/invitations"
         async with aiohttp.ClientSession() as httpsession:
@@ -52,6 +64,7 @@ async def process(
             "okay": False,
             "message": "You need to be authed via GitHub before we can send an invite link to you.",
         }
+
 
 def register(server: plugins.basetypes.Server):
     return plugins.basetypes.Endpoint(process)
