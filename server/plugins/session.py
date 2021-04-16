@@ -33,31 +33,13 @@ SAVE_SESSION_INTERVAL = 3600  # Update sessions on disk max once per hour
 
 
 class SessionCredentials:
-    uid: str
-    name: str
-    email: str
-    provider: str
-    authoritative: bool
-    admin: bool
-    oauth_data: dict
-
-    def __init__(self, doc):
-        if doc:
-            self.uid = doc.get("uid", "")
-            self.name = doc.get("name", "")
-            self.email = doc.get("email", "")
-            self.oauth_provider = doc.get("oauth_provider", "generic")
-            self.authoritative = doc.get("authoritative", False)
-            self.admin = doc.get("admin", False)
-            self.oauth_data = doc.get("oauth_data", {})
-        else:
-            self.uid = ""
-            self.name = ""
-            self.email = ""
-            self.oauth_provider = "generic"
-            self.authoritative = False
-            self.admin = False
-            self.oauth_data = {}
+    def __init__(self, **kwargs):
+        self.uid: str = kwargs.get("uid", "")
+        self.name: str = kwargs.get("name", "")
+        self.email: str = kwargs.get("email", "")
+        self.admin: bool = False
+        self.github_login = None
+        self.github_id = 0
 
 
 class SessionObject:
@@ -81,7 +63,7 @@ class SessionObject:
             self.cid = None
         else:
             self.last_accessed = kwargs.get("last_accessed", 0)
-            self.credentials = SessionCredentials(kwargs.get("credentials"))
+            self.credentials = SessionCredentials(**kwargs)
             self.cookie = kwargs.get("cookie", "___")
             self.cid = kwargs.get("cid")
 
@@ -110,23 +92,21 @@ async def get_session(
         else:
             x_session.last_accessed = now
             session = copy.copy(x_session)
-            session.database = await server.dbpool.get()
-
             return session
     # If not in local memory, start a new session object
     session = SessionObject(server)
     return session
 
 
-async def set_session(server: plugins.basetypes.Server, cid, **credentials):
+async def set_session(server: plugins.basetypes.Server, **credentials):
     """Create a new user session in the database"""
     session_id = str(uuid.uuid4())
     cookie: http.cookies.SimpleCookie = http.cookies.SimpleCookie()
     cookie["boxer"] = session_id
     session = SessionObject(
-        server, last_accessed=time.time(), cookie=session_id, cid=cid
+        server, last_accessed=time.time(), cookie=session_id
     )
-    session.credentials = SessionCredentials(credentials)
+    session.credentials = SessionCredentials(**credentials)
     server.data.sessions[session_id] = session
 
     return cookie["boxer"].OutputString()
