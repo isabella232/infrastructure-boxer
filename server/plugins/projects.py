@@ -45,7 +45,7 @@ class Committer:
         return self.asf_id == other.asf_id
 
     def __hash__(self):
-        return self.asf_id
+        return hash((self.asf_id,))
 
 
 class Project:
@@ -78,19 +78,25 @@ class Project:
             for account in self.committers:
                 account.repositories.add(repo)
 
-    def public_github_team(self):
+    def public_github_team(self, mfa = None):
         """Returns the GitHub IDs of everyone that should be on the GitHub team for this project"""
         team_ids = set()
         for committer in self.committers:
-            if committer.github_mfa:
+            if mfa:
+                if mfa.get(committer.github_id):
+                    team_ids.add(committer.github_id)
+            elif committer.github_mfa:
                 team_ids.add(committer.github_id)
         return list(team_ids)
 
-    def private_github_team(self):
+    def private_github_team(self, mfa = None):
         """Returns the GitHub IDs of everyone that should be on the GitHub private team for this project"""
         team_ids = set()
         for committer in self.pmc:
-            if committer.github_mfa:
+            if mfa:
+                if mfa.get(committer.github_id):
+                    team_ids.add(committer.github_id)
+            elif committer.github_mfa:
                 team_ids.add(committer.github_id)
         return list(team_ids)
 
