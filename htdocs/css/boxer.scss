@@ -1,0 +1,233 @@
+/*
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+*/
+
+$font: Helvetica, Arial, sans-serif;
+$main_background_color: white;
+$body_background_color: white;
+$color_text: #444;
+$color_link: #2623aa;
+$color_dropdown: #eee;
+$color_nav_item: #2f3036;
+$color_nav_text: #ddd;
+$color_nav_hover: red;
+$color_header_text: #eee;
+$body_background_hover: #0006;
+
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+    background: $body_background_color;
+}
+
+body {
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 100%;
+    position: relative;
+    pointer-events: auto;
+}
+
+
+body.blurbg:after {
+    content: "";
+    width: inherit;
+    height: inherit;
+    position: absolute;
+    background: $color_nav_item;
+    top: 0;
+    left: 0;
+    opacity: 0.75;
+    transition: opacity 0.15s ease-in-out;
+    z-index: 1;
+}
+
+
+header {
+    display: grid;
+    grid-template-columns: 30% auto;
+    background: $color_nav_item;
+    padding: 0;
+    height: 64px;
+
+    .header-logo {
+        display: flex;
+    }
+
+    .header-logo img {
+        max-height: 64px;
+    }
+
+    .header-text {
+        display: flex;
+        align-items: center;
+        font-size: 24px;
+        font-family: $font;
+        color: $color_header_text;
+        padding-left: 20px;
+    }
+
+    @media screen and (max-width : 810px){
+            grid-template-columns: auto;
+            .header-logo {
+                width: 100%;
+                display: block;
+            }
+            .header-text {
+                display: block;
+            }
+            .header-logo img {
+                display: none;
+            }
+        }
+
+    nav {
+        ul {
+            list-style-type:none;
+            margin:0;
+            padding:0;
+            position: absolute;
+            z-index: 2;
+        }
+        ul li {
+            display:inline-block;
+            float: left;
+            margin-right: 1px;
+            position: relative;
+            background: $color_nav_item;
+            top: 50%;
+            z-index: 1;
+
+        }
+        ul li a {
+            display:block;
+            height: 64px;
+            margin-left: 24px;
+            text-align: center;
+            line-height: 64px;
+            font-family: $font;
+            color: $color_nav_text;
+            text-decoration: none;
+            pointer-events: auto;
+        }
+
+        ul.hidden:after {
+            min-width: 120px;
+            content: "▲";
+            color: white;
+            font-size: 32px;
+            position: absolute;
+            top: -28px;
+            left: 0;
+            text-align: center;
+
+        }
+
+        li:hover a {
+            color: $color_nav_hover;
+            cursor: pointer;
+        }
+
+        ul li:hover ul {
+            width: 360px;
+            display: block;
+            background: white;
+            line-height: 40px;
+            pointer-events: auto;
+        }
+        ul li:hover ul li {
+            background: white;
+            display: inline-block;
+            color: $color_text;
+        }
+        li:hover ul a:hover {
+            color: $color_nav_hover;
+        }
+        li ul {
+            display: none;
+        }
+
+        ul.hidden {
+            background-color: white;
+            line-height: initial;
+        }
+        ul.hidden a {
+            color: #666;
+            height: auto;
+            text-align: left;
+            line-height: initial;
+            margin-bottom: 10px;
+        }
+        ul.hidden p {
+            font-size: 0.8rem;
+            margin: 0px;
+            padding: 0px;
+            color: #888;
+        }
+        .show-menu {
+            font-family: $font;
+            text-decoration: none;
+            color: #fff;
+            background: $color_nav_hover;
+            text-align: center;
+            padding: 10px 0;
+            display: none;
+        }
+        input[type=checkbox]{
+            display: none;
+            -webkit-appearance: none;
+        }
+        input[type=checkbox]:checked ~ #menu{
+            display: block;
+        }
+
+        @media screen and (max-width : 810px){
+            ul {
+                position: static;
+                display: none;
+            }
+            li {
+                margin-bottom: 1px;
+            }
+            ul li, li a {
+                width: 100%;
+            }
+            .show-menu {
+                display:block;
+            }
+        }
+    }
+}
+
+footer {
+    background-color: $color_nav_item;
+    color: white;
+    min-height: 100px;
+}
+
+main {
+    padding: 0.5em;
+    margin: 0 auto;
+    max-width: 85%;
+    color: $color_text;
+    background: $main_background_color;
+    font-family: $font;
+}
