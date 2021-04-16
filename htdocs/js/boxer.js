@@ -1,3 +1,4 @@
+let gh_org = "asftest";
 let gh_client_id = '8c54a8ee6f5be892bb41';
 let state = Math.random().toString(20).substr(2, 6) + Math.random().toString(20).substr(2, 6) + Math.random().toString(20).substr(2, 6);
 
@@ -145,7 +146,20 @@ async function prime() {
     }
 
     if (!formdata.action) {
-        canvas.innerText = `Welcome, ${login.credentials.fullname.split(' ')[0]}! You are authed as ${login.github.login} on GitHub.`;
+        canvas.innerText = `Welcome, ${login.credentials.fullname.split(' ')[0]}! You are authed as ${login.github.login} on GitHub. You will have access to the following repositories:`;
+        let ul = document.createElement('ul');
+        canvas.appendChild(ul);
+        login.github.repositories.sort();
+        for (let i = 0; i < login.github.repositories.length; i++) {
+            let repo = login.github.repositories[i];
+            let a = document.createElement('a');
+            let link = `https://github.com/${gh_org}/${repo}`;
+            a.setAttribute("href", link);
+            a.innerText = link;
+            let li = document.createElement('li');
+            li.appendChild(a);
+            ul.appendChild(li);
+        }
     }
 }
 
