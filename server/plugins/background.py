@@ -38,7 +38,7 @@ async def adjust_teams(server: plugins.basetypes.Server):
                 asf_project = server.data.projects.get(team.project)
                 if asf_project:
                     if asf_project.public_repos:
-                        ldap_github_team = asf_project.public_github_team()
+                        ldap_github_team = asf_project.public_github_team(server.data.mfa)
                         if asf_project.committers:  # Only set if we got LDAP data back
                             added, removed = await team.set_membership(ldap_github_team)
                             if added:
@@ -53,7 +53,7 @@ async def adjust_teams(server: plugins.basetypes.Server):
                 asf_project = server.data.projects.get(team.project)
                 if asf_project:
                     if asf_project.private_repos:
-                        ldap_github_team = asf_project.private_github_team()
+                        ldap_github_team = asf_project.private_github_team(server.data.mfa)
                         if asf_project.pmc:  # Only set if we got LDAP data back
                             added, removed = await team.set_membership(ldap_github_team)
                             if added:
@@ -129,6 +129,9 @@ async def run_tasks(server: plugins.basetypes.Server):
                 await asyncio.sleep(10)
                 continue
 
+        async with ProgTimer("Gathering MFA status of GitHub users"):
+            server.data.mfa = await asf_github_org.get_mfa_status()
+
         async with ProgTimer("Gathering list of repositories on GitHub"):
             server.data.github_repos = await asf_github_org.load_repositories()
         async with ProgTimer("Compiling list of projects, repos and memberships"):
@@ -137,19 +140,18 @@ async def run_tasks(server: plugins.basetypes.Server):
                     server.config.ldap, server.data.repositories, server.database.client
                 )
                 server.data.projects = asf_org.projects
-                server.data.people = asf_org.committers
+                for person in asf_org.committers:
+                    if person not in server.data.people:
+                        server.data.people.append(person)
             except Exception as e:
                 print("Could not fetch repositories - ldap source down or not connected: %s" % e)
-
-        async with ProgTimer("Gathering MFA status of GitHub users"):
-            server.data.mfa = await asf_github_org.get_mfa_status()
 
         async with ProgTimer("Adjusting MFA status for users"):
             for person in server.data.people:
                 if person.github_id and person.github_id in server.data.mfa:
                     if person.github_mfa is not server.data.mfa[person.github_id]:
                         person.github_mfa = server.data.mfa[person.github_id]
-                        person.save()  # Update sqlite db if changed
+                        person.save(server.database.client)  # Update sqlite db if changed
                 else:
                     person.github_mfa = False  # Flag as no MFA if person was not found
 
