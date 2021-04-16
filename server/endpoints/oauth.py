@@ -51,12 +51,12 @@ async def process(
     if rv and oatype == "apache":
         ghid = None
         person = plugins.projects.Committer(asf_id=rv["uid"], linkdb=server.database.client)
-        if person and person.github_id:
-            ghid = person.github_id
+        if person and person.github_login:
+            ghid = person.github_login
             if person not in server.data.people:
                 server.data.people.append(person)
 
-        cookie = await plugins.session.set_session(server, uid=rv["uid"], name=rv["fullname"], email=rv["email"],github_id=ghid)
+        cookie = await plugins.session.set_session(server, uid=rv["uid"], name=rv["fullname"], email=rv["email"], github_login=ghid)
         return aiohttp.web.Response(
             headers={"set-cookie": cookie, "content-type": "application/json"}, status=200, text='{"okay": true}',
         )
@@ -64,24 +64,20 @@ async def process(
         session.credentials.github_login = rv["login"]
         session.credentials.github_id = rv["id"]
 
-        in_db = False
-        for p in server.data.people:
-            if p.asf_id == session.credentials.uid:
-                p.github_id = session.credentials.github_login
-                p.github_mfa = False
-                p.save(server.database.client)
-                in_db = True
-                break
-        if not in_db:
-            person = plugins.projects.Committer(
-                asf_id=session.credentials.uid,
-                linkdb=server.database.client,
-            )
-            person.github_id = session.credentials.github_login
-            person.real_name = session.credentials.name
-            person.github_mfa = False
-            person.save(server.database.client)
-            server.data.people.append(person)
+        if session.credentials.uid in server.data.people:
+            print(f"Removing stale GitHub link entry for {session.credentials.uid}")
+            server.data.people.remove(session.credentials.uid)
+
+        person = plugins.projects.Committer(
+            asf_id=session.credentials.uid,
+            linkdb=server.database.client,
+        )
+        person.github_login = session.credentials.github_login
+        person.github_id = session.credentials.github_id
+        person.real_name = session.credentials.name
+        person.github_mfa = False
+        person.save(server.database.client)
+        server.data.people.append(person)
         return {
             "okay": True,
             "message": f"Authed as {session.credentials.github_login}"

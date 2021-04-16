@@ -148,9 +148,9 @@ async def run_tasks(server: plugins.basetypes.Server):
 
         async with ProgTimer("Adjusting MFA status for users"):
             for person in server.data.people:
-                if person.github_id and person.github_id in server.data.mfa:
-                    if person.github_mfa is not server.data.mfa[person.github_id]:
-                        person.github_mfa = server.data.mfa[person.github_id]
+                if person.github_login and person.github_login in server.data.mfa:
+                    if person.github_mfa is not server.data.mfa[person.github_login]:
+                        person.github_mfa = server.data.mfa[person.github_login]
                         person.save(server.database.client)  # Update sqlite db if changed
                 else:
                     person.github_mfa = False  # Flag as no MFA if person was not found

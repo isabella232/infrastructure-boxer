@@ -9,7 +9,7 @@ class Committer:
     def save(self, dbhandle: asfpy.sqlite.DB):
         document = {
             "asfid": self.asf_id,
-            "githubid": self.github_id,
+            "githubid": self.github_login,
             "mfa": 1 if self.github_mfa else 0,
             "updated": datetime.datetime.now(),
         }
@@ -26,11 +26,11 @@ class Committer:
         else:
             row = None
         if row:
-            self.github_id = row["githubid"]
+            self.github_login = row["githubid"]
             self.github_mfa = bool(row["mfa"])
             self.real_name = "Foo Bar"
         else:
-            self.github_id = None
+            self.github_login = None
             self.github_mfa = False
             self.real_name = "Unknown"
 
@@ -83,10 +83,10 @@ class Project:
         team_ids = set()
         for committer in self.committers:
             if mfa:
-                if mfa.get(committer.github_id):
-                    team_ids.add(committer.github_id)
+                if mfa.get(committer.github_login):
+                    team_ids.add(committer.github_login)
             elif committer.github_mfa:
-                team_ids.add(committer.github_id)
+                team_ids.add(committer.github_login)
         return list(team_ids)
 
     def private_github_team(self, mfa = None):
@@ -94,10 +94,10 @@ class Project:
         team_ids = set()
         for committer in self.pmc:
             if mfa:
-                if mfa.get(committer.github_id):
-                    team_ids.add(committer.github_id)
+                if mfa.get(committer.github_login):
+                    team_ids.add(committer.github_login)
             elif committer.github_mfa:
-                team_ids.add(committer.github_id)
+                team_ids.add(committer.github_login)
         return list(team_ids)
 
 

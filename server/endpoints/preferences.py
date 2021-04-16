@@ -34,7 +34,7 @@ async def process(
                 github_data = {
                     "repositories": [x.filename for x in p.repositories],
                     "mfa": p.github_mfa,
-                    "login": p.github_id,
+                    "login": p.github_login,
                 }
     prefs: dict = {"credentials": {}, "github": github_data}
     if session and session.credentials:
