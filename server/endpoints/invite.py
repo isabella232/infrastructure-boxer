@@ -35,6 +35,7 @@ async def process(
                     break
         return {
             "okay": False,
+            "reauth": True,
             "message": "Could not invite to Org - missing numerical GitHub ID.",
         }
     if session.credentials and session.credentials.github_login:
