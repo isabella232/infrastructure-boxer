@@ -205,4 +205,72 @@ main {
   font-family: Helvetica, Arial, sans-serif;
 }
 
+#card {
+  border-radius: 9px;
+  border: 1px solid #333;
+  background: linear-gradient(135deg, #7800FF 0px, #7800FF 64px, #FBFBFB 64px, #FBFBFB 100%);
+  box-shadow: 0px 0px 5px #2f3036;
+  width: 520px;
+  height: 150px;
+  text-align: left;
+  padding: 10px 0px 4px 14px;
+  margin: 20px;
+}
+#card img.mfaicon {
+  position: absolute;
+  right: -64px;
+  top: -32px;
+  width: 32px;
+  height: 32px;
+}
+#card p.link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-top: -4px;
+  width: 98%;
+}
+#card img.avatar {
+  border-radius: 50%;
+  border: 6px solid #FBFBFB;
+  width: 64px;
+}
+#card h1 {
+  font-size: 16px;
+  display: inline-block;
+  position: absolute;
+  margin: 30px 0;
+  padding: 0px;
+  text-align: center;
+  width: 360px;
+}
+
+ul.striped {
+  padding: 0;
+}
+
+.striped li {
+  padding: 1.5px;
+  font-size: 0.9rem;
+}
+
+.striped li:nth-child(odd) {
+  background-color: #f4f4f4;
+  list-style: none;
+  border: 1px solid #999;
+  border-bottom: none;
+}
+
+.striped li:nth-child(even) {
+  background-color: #fbfbfb;
+  list-style: none;
+  border: 1px solid #999;
+  border-bottom: none;
+}
+
+.striped li:last-child {
+  border-bottom: 1px solid #999;
+}
+
 /*# sourceMappingURL=boxer.css.map */

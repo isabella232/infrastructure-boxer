@@ -146,9 +146,53 @@ async function prime() {
     }
 
     if (!formdata.action) {
-        canvas.innerText = `Welcome, ${login.credentials.fullname.split(' ')[0]}! You are authed as ${login.github.login} on GitHub. You will have access to the following repositories:`;
+
+        canvas.innerText = "";
+
+        let card = document.createElement('div');
+        card.setAttribute('id', "card");
+
+        let avatar = document.createElement('img');
+        avatar.setAttribute('src', `https://github.com/${login.github.login}.png`);
+        avatar.setAttribute('class', 'avatar');
+        card.appendChild(avatar);
+
+        let name = document.createElement('h1');
+        name.innerText = login.credentials.fullname;
+        card.appendChild(name);
+
+        let mfaicon = document.createElement('img');
+        mfaicon.setAttribute('class', 'mfaicon');
+        if (login.github.mfa) {
+            mfaicon.setAttribute('src', '/images/mfa_enabled.png');
+            mfaicon.setAttribute('title', '2-factor authentication enabled on GitHub');
+        } else {
+            mfaicon.setAttribute('src', '/images/mfa_disabled.png');
+            mfaicon.setAttribute('title', '2-factor authentication not enabled on GitHub!');
+        }
+
+        name.appendChild(mfaicon);
+
+        card.appendChild(document.createElement('hr'));
+
+        let ghlinkp = document.createElement('p');
+        ghlinkp.setAttribute('class', 'link');
+        let ghlink = document.createElement('img');
+        ghlink.setAttribute('src', '/images/ghasflink.png');
+        ghlink.style.width = "125px";
+        ghlink.style.margin = '8px';
+        ghlinkp.appendChild(document.createTextNode(login.credentials.uid));
+        ghlinkp.appendChild(ghlink);
+        ghlinkp.appendChild(document.createTextNode(login.github.login));
+
+        card.appendChild(ghlinkp);
+
+        canvas.appendChild(card);
+
         let ul = document.createElement('ul');
+        ul.setAttribute('class', 'striped');
         canvas.appendChild(ul);
+        ul.innerText = "You have write access to the following repositories:";
         login.github.repositories.sort();
         for (let i = 0; i < login.github.repositories.length; i++) {
             let repo = login.github.repositories[i];
