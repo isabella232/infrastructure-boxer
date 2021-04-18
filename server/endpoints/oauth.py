@@ -75,7 +75,7 @@ async def process(
         person.github_login = session.credentials.github_login
         person.github_id = session.credentials.github_id
         person.real_name = session.credentials.name
-        person.github_mfa = False
+        person.github_mfa = session.credentials.github_login in server.data.mfa and server.data.mfa[session.credentials.github_login]
         person.save(server.database.client)
         server.data.people.append(person)
         return {
