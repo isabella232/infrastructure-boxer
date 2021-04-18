@@ -141,8 +141,16 @@ async def run_tasks(server: plugins.basetypes.Server):
                 )
                 server.data.projects = asf_org.projects
                 for person in asf_org.committers:
+                    # Append?
                     if person not in server.data.people:
                         server.data.people.append(person)
+                    # Update?
+                    else:
+                        for p in server.data.people:
+                            if p.asf_id == person.asf_id:
+                                p.repositories = person.repositories
+                                p.projects = person.projects
+                                break
             except Exception as e:
                 print("Could not fetch repositories - ldap source down or not connected: %s" % e)
 
