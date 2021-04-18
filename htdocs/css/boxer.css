@@ -211,7 +211,7 @@ main {
   background: linear-gradient(135deg, #7800FF 0px, #7800FF 64px, #FBFBFB 64px, #FBFBFB 100%);
   box-shadow: 0px 0px 5px #2f3036;
   width: 520px;
-  height: 150px;
+  height: 200px;
   text-align: left;
   padding: 10px 0px 4px 14px;
   margin: 20px;
@@ -258,19 +258,98 @@ ul.striped {
 .striped li:nth-child(odd) {
   background-color: #f4f4f4;
   list-style: none;
-  border: 1px solid #999;
+  border: 1px solid #aaa;
   border-bottom: none;
 }
 
 .striped li:nth-child(even) {
   background-color: #fbfbfb;
   list-style: none;
-  border: 1px solid #999;
+  border: 1px solid #aaa;
   border-bottom: none;
 }
 
 .striped li:last-child {
-  border-bottom: 1px solid #999;
+  border-bottom: 1px solid #aaa;
+  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.striped li:first-child {
+  border-top-right-radius: 4px;
+  border-top-left-radius: 4px;
+}
+
+button {
+  background: #4477a1;
+  background: linear-gradient(180deg, #81a8cb, #4477a1);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: white;
+}
+
+.loader {
+  font-size: 10px;
+  margin: 100px auto;
+  text-indent: -9999em;
+  width: 16em;
+  height: 16em;
+  border-radius: 50%;
+  background: darkblue;
+  background: linear-gradient(to right, darkblue 10%, rgba(255, 255, 255, 0) 42%);
+  position: relative;
+  -webkit-animation: load3 1.4s infinite linear;
+  animation: load3 1.4s infinite linear;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.loader:before {
+  width: 50%;
+  height: 50%;
+  background: darkblue;
+  border-radius: 100% 0 0 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  content: "";
+}
+
+.loader:after {
+  background: white;
+  width: 75%;
+  height: 75%;
+  border-radius: 50%;
+  content: "";
+  margin: auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+@-webkit-keyframes load3 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes load3 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
 }
 
 /*# sourceMappingURL=boxer.css.map */
