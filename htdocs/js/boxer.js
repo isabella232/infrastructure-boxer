@@ -3,6 +3,12 @@ let gh_client_id = '8c54a8ee6f5be892bb41';
 let state = Math.random().toString(20).substr(2, 6) + Math.random().toString(20).substr(2, 6) + Math.random().toString(20).substr(2, 6);
 let hostname = location.hostname;
 
+
+let txt = (a) => document.createTextNode(a);
+let br = (a) => document.createElement('br');
+let h2 = (a) => {let x = document.createElement('h2'); x.innerText = a ? a : ""; return x}
+
+
 function blurbg(blur = false) {
     if (blur) document.body.setAttribute("class", "blurbg");
     else  document.body.setAttribute("class", "");
@@ -56,14 +62,19 @@ function invite_github(canvas) {
     GET("/api/invite").then(
         (js) => {
             if (js.okay) {
-                canvas.innerText = "An invitation has been sent to your email address. You may also review it here: "
+                canvas.innerHTML = "";
+                init_step(canvas, 2)
+                canvas.appendChild(h2("GitHub Organization Membership"))
+                canvas.appendChild(txt("An invitation has been sent to your email address. You may also review it here: "));
                 let a = document.createElement("a");
-                a.setAttribute("href", "https://github.com/asftest/");
+                a.setAttribute("href", `https://github.com/orgs/${gh_org}/invitation`);
                 a.setAttribute("target", "_new");
                 a.innerText = "Review invitation";
                 canvas.appendChild(a);
                 let p = document.createElement('p');
-                p.innerText = "Once you have accepted your invitation, the Boxer service will start including you in the teams you have been assigned to. It may take up to five minutes before this happens. This page will reload once your invitation has been recorded as accepted, sit tight...";
+                p.appendChild(txt("Once you have accepted your invitation, the Boxer service will start including you in the teams you have been assigned to. "));
+                p.appendChild(br());
+                p.appendChild(txt("It may take up to five minutes before this happens. This page will reload once your invitation has been recorded as accepted, sit tight..."));
                 canvas.appendChild(p);
                 let loader = document.createElement('div');
                 loader.setAttribute('class', 'loader');
@@ -83,19 +94,22 @@ function invite_github(canvas) {
 }
 
 function show_page_github_invite(canvas) {
-    canvas.innerText = "You do not appear to be a part of the Apache GitHub organization yet. This is the first step towards getting write-access to repositories.";
+    init_step(canvas, 2)
+    canvas.appendChild(h2("GitHub Organization Membership"))
+    canvas.appendChild(txt("You do not appear to be a part of the Apache GitHub organization yet. "))
     canvas.appendChild(document.createElement('br'));
     canvas.appendChild(document.createElement('br'));
     let a = document.createElement("button");
     a.addEventListener("click", () => invite_github(canvas));
     a.innerText = "Send GitHub Invitation!";
-    canvas.appendChild(document.createTextNode('Click here to receive an invitation: '));
+    canvas.appendChild(document.createTextNode('Click this button receive an invitation so you can gain write-access on GitHub: '));
     canvas.appendChild(a);
 
 }
 
 function show_page_profile(canvas, login) {
     canvas.innerText = "";
+    init_step(canvas, 5);
 
     let card = document.createElement('div');
     card.setAttribute('id', "card");
@@ -215,9 +229,24 @@ function show_page_profile(canvas, login) {
     }
 }
 
+function init_step(canvas, step) {
+
+    canvas.innerHTML = "";
+
+    let header = document.createElement('h1');
+    header.style.textAlign = "center";
+    header.style.width = "100%";
+    let verified = document.createElement('img');
+    verified.setAttribute('src', `images/v_step${step}.png`);
+    verified.style.width = "600px";
+    header.appendChild(verified);
+    canvas.appendChild(header);
+}
+
 async function prime() {
 
     let canvas = document.getElementById('main');
+
     let formdata = {};
     let matches = location.search.match(/[^?=&]+=[^&]+/g);
     if (matches) {
@@ -250,13 +279,16 @@ async function prime() {
 
 
 
+
     // Not authed via GitHub yet
     if (!login.github || !login.github.login) {
-        canvas.innerText = "Please authenticate yourself on GitHub before we can continue: ";
-        let a = document.createElement("a");
-        a.setAttribute("href", "#");
+        init_step(canvas, 1)
+        canvas.appendChild(h2("Authenticate on GitHub"))
+        canvas.appendChild(txt("Please authenticate yourself on GitHub to proceed. This will ensure we know who you are in GitHub, and can invite you to the organization in case you are not apart of Apache on GitHub yet: "))
+        canvas.appendChild(document.createElement('br'));
+        let a = document.createElement("button");
         a.addEventListener("click", begin_oauth_github);
-        a.innerText = "Auth with GitHub";
+        a.innerText = "Authenticate with GitHub";
         canvas.appendChild(a);
         return
     }
@@ -269,6 +301,18 @@ async function prime() {
     // Authed via GitHub but not linked
     if (!login.github || login.credentials.github_login != login.github.login) {
         canvas.innerText = `You are authed on GitHub as ${login.credentials.github_login}, but this account has not been linked to your Apache account yet.`;
+        return
+    }
+
+    if (!login.github.mfa) {
+        canvas.innerHTML = "";
+        init_step(canvas, 3)
+        canvas.appendChild(h2("Multi-factor Authentication Check"))
+        canvas.appendChild(txt("You do not appear to have enabled Multi-factor Authentication (MFA) on GitHub yet. "));
+        canvas.appendChild(br());
+        canvas.appendChild(txt("Please enable this and reload this page, as we cannot grant write access to GitHub repositories to accounts without MFA enabld."));
+        canvas.appendChild(br());
+        canvas.appendChild(txt("If you already have MFA enabled, it may take up to five minutes for the Boxer service to recognize it."));
         return
     }
 
