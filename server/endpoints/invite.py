@@ -25,6 +25,21 @@ import aiohttp
 async def process(
         server: plugins.basetypes.Server, session: plugins.session.SessionObject, indata: dict
 ) -> dict:
+    if indata.get('unlink') and session.credentials:
+        for person in server.data.people:
+            if person.asf_id == session.credentials.uid:
+                print(f"Unlinking GitHub login from user {person.asf_id}")
+                person.github_login = ""
+                person.save(server.database.client)
+                return {
+                    "okay": True,
+                    "reauth": True,
+                    "message": "unlinked from GitHub",
+                }
+        return {
+            "okay": False,
+            "message": "Could not unlink - account not found in database!",
+        }
     if not session.credentials.github_id:
         if session.credentials.github_login:
             for person in server.data.people:
