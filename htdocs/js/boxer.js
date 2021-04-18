@@ -1,6 +1,7 @@
 let gh_org = "asftest";
 let gh_client_id = '8c54a8ee6f5be892bb41';
 let state = Math.random().toString(20).substr(2, 6) + Math.random().toString(20).substr(2, 6) + Math.random().toString(20).substr(2, 6);
+let hostname = location.hostname;
 
 function blurbg(blur = false) {
     if (blur) document.body.setAttribute("class", "blurbg");
@@ -64,6 +65,9 @@ function invite_github(canvas) {
                 let p = document.createElement('p');
                 p.innerText = "Once you have accepted your invitation, the Boxer service will start including you in the teams you have been assigned to. It may take up to five minutes before this happens. This page will reload once your invitation has been recorded as accepted, sit tight...";
                 canvas.appendChild(p);
+                let loader = document.createElement('div');
+                loader.setAttribute('class', 'loader');
+                canvas.appendChild(loader);
                 check_github_invite(canvas);
             } else {
                 if (js.reauth === true) {
@@ -79,17 +83,141 @@ function invite_github(canvas) {
 }
 
 function show_page_github_invite(canvas) {
-    canvas.innerText = "You do not appear to be a part of the Apache GitHub organization yet. This is the first step towards getting write-access to repositories. Click the link below to initate an invitation";
+    canvas.innerText = "You do not appear to be a part of the Apache GitHub organization yet. This is the first step towards getting write-access to repositories.";
     canvas.appendChild(document.createElement('br'));
-    let a = document.createElement("a");
-    a.setAttribute("href", "#");
+    canvas.appendChild(document.createElement('br'));
+    let a = document.createElement("button");
     a.addEventListener("click", () => invite_github(canvas));
-    a.innerText = "Invite me to the GitHub organization!";
+    a.innerText = "Send GitHub Invitation!";
+    canvas.appendChild(document.createTextNode('Click here to receive an invitation: '));
     canvas.appendChild(a);
 
 }
 
+function show_page_profile(canvas, login) {
+    canvas.innerText = "";
+
+    let card = document.createElement('div');
+    card.setAttribute('id', "card");
+
+    let avatar = document.createElement('img');
+    avatar.setAttribute('src', `https://github.com/${login.github.login}.png`);
+    avatar.setAttribute('class', 'avatar');
+    card.appendChild(avatar);
+
+    let name = document.createElement('h1');
+    name.innerText = login.credentials.fullname;
+    card.appendChild(name);
+
+    card.appendChild(document.createElement('hr'));
+
+    let boxerstatus = document.createElement('table');
+    boxerstatus.style.border = "none";
+    boxerstatus.style.width = "95%"
+
+    // ASF Auth
+    if (login.credentials.uid) {
+        let tr = document.createElement('tr');
+        let icon = document.createElement('td');
+        icon.style.textAlign = 'center';
+        let iconimg = document.createElement('img');
+        iconimg.setAttribute('src', 'images/asf.png');
+        iconimg.style.height = '24px';
+        icon.appendChild(iconimg);
+        let txt = document.createElement('td');
+        txt.innerText = `Authed at ASF as: ${login.credentials.uid}`;
+        tr.appendChild(icon);
+        tr.appendChild(txt);
+        boxerstatus.appendChild(tr);
+    }
+
+    // GitHub Auth
+    if (login.github.login) {
+        let tr = document.createElement('tr');
+        let icon = document.createElement('td');
+        icon.style.textAlign = 'center';
+        let iconimg = document.createElement('img');
+        iconimg.setAttribute('src', 'images/github.png');
+        iconimg.style.height = '24px';
+        icon.appendChild(iconimg);
+        let txt = document.createElement('td');
+        txt.innerText = `Authed at GitHub as: ${login.github.login}`;
+        tr.appendChild(icon);
+        tr.appendChild(txt);
+        boxerstatus.appendChild(tr);
+    }
+
+    // GitHub MFA
+    if (login.github.mfa) {
+        let tr = document.createElement('tr');
+        let icon = document.createElement('td');
+        icon.style.textAlign = 'center';
+        let iconimg = document.createElement('img');
+        iconimg.setAttribute('src', 'images/mfa_enabled.png');
+        iconimg.style.height = '24px';
+        icon.appendChild(iconimg);
+        let txt = document.createElement('td');
+        txt.innerText = "GitHub MFA status: Enabled";
+        tr.appendChild(icon);
+        tr.appendChild(txt);
+        boxerstatus.appendChild(tr);
+    } else {
+        let tr = document.createElement('tr');
+        let icon = document.createElement('td');
+        icon.style.textAlign = 'center';
+        let iconimg = document.createElement('img');
+        iconimg.setAttribute('src', 'images/mfa_disabled.png');
+        iconimg.style.height = '24px';
+        icon.appendChild(iconimg);
+        let txt = document.createElement('td');
+        txt.innerText = "GitHub MFA status: DISABLED";
+        tr.appendChild(icon);
+        tr.appendChild(txt);
+        boxerstatus.appendChild(tr);
+    }
+
+
+    card.appendChild(boxerstatus);
+
+    canvas.appendChild(card);
+
+    if (login.github.mfa) {
+        if (login.github.repositories.length > 0) {
+            let ul = document.createElement('ul');
+            ul.setAttribute('class', 'striped');
+            canvas.appendChild(ul);
+            ul.innerText = "You have write access to the following repositories:";
+            login.github.repositories.sort();
+            for (let i = 0; i < login.github.repositories.length; i++) {
+                let repo = login.github.repositories[i];
+                let a = document.createElement('a');
+                let link = `https://github.com/${gh_org}/${repo}`;
+                a.setAttribute("href", link);
+                a.innerText = link;
+                let li = document.createElement('li');
+                li.appendChild(a);
+                ul.appendChild(li);
+            }
+        } else {
+            canvas.appendChild(document.createTextNode("You do not appear to have access to any git repositories right now."));
+        }
+    } else {
+        canvas.appendChild(document.createTextNode("You need to enable multi-factor authentication at GitHub to get write access to repositories there."));
+        let a = document.createElement('a');
+        a.setAttribute('href', 'https://github.com/settings/security');
+        a.setAttribute('target', '_new');
+        a.innerText = "GitHub Account Security";
+        canvas.appendChild(document.createElement('br'));
+        canvas.appendChild(document.createTextNode("Please follow this link to set it up: "));
+        canvas.appendChild(a);
+        canvas.appendChild(document.createElement('br'));
+        canvas.appendChild(document.createTextNode("It may take up to five minutes for Boxer to recognize your MFA being enabled."));
+    }
+}
+
 async function prime() {
+
+    let canvas = document.getElementById('main');
     let formdata = {};
     let matches = location.search.match(/[^?=&]+=[^&]+/g);
     if (matches) {
@@ -115,12 +243,11 @@ async function prime() {
 
     // Otherwise, if not logged in yet, go to OAuth
     else if (!login.credentials.uid) {
-        let oauth_url = encodeURIComponent("https://localhost.apache.org/boxer.html?action=oauth&state=" + state);
+        let oauth_url = encodeURIComponent(`https://${hostname}/boxer.html?action=oauth&state=` + state);
         location.href = "https://oauth.apache.org/auth?redirect_uri=" + oauth_url + "&state=" + state;
         return
     }
 
-    let canvas = document.getElementById('main');
 
 
     // Not authed via GitHub yet
@@ -145,73 +272,14 @@ async function prime() {
         return
     }
 
-    if (!formdata.action) {
-
-        canvas.innerText = "";
-
-        let card = document.createElement('div');
-        card.setAttribute('id', "card");
-
-        let avatar = document.createElement('img');
-        avatar.setAttribute('src', `https://github.com/${login.github.login}.png`);
-        avatar.setAttribute('class', 'avatar');
-        card.appendChild(avatar);
-
-        let name = document.createElement('h1');
-        name.innerText = login.credentials.fullname;
-        card.appendChild(name);
-
-        let mfaicon = document.createElement('img');
-        mfaicon.setAttribute('class', 'mfaicon');
-        if (login.github.mfa) {
-            mfaicon.setAttribute('src', '/images/mfa_enabled.png');
-            mfaicon.setAttribute('title', '2-factor authentication enabled on GitHub');
-        } else {
-            mfaicon.setAttribute('src', '/images/mfa_disabled.png');
-            mfaicon.setAttribute('title', '2-factor authentication not enabled on GitHub!');
-        }
-
-        name.appendChild(mfaicon);
-
-        card.appendChild(document.createElement('hr'));
-
-        let ghlinkp = document.createElement('p');
-        ghlinkp.setAttribute('class', 'link');
-        let ghlink = document.createElement('img');
-        ghlink.setAttribute('src', '/images/ghasflink.png');
-        ghlink.style.width = "125px";
-        ghlink.style.margin = '8px';
-        ghlinkp.appendChild(document.createTextNode(login.credentials.uid));
-        ghlinkp.appendChild(ghlink);
-        ghlinkp.appendChild(document.createTextNode(login.github.login));
-
-        card.appendChild(ghlinkp);
-
-        canvas.appendChild(card);
-
-        let ul = document.createElement('ul');
-        ul.setAttribute('class', 'striped');
-        canvas.appendChild(ul);
-        ul.innerText = "You have write access to the following repositories:";
-        login.github.repositories.sort();
-        for (let i = 0; i < login.github.repositories.length; i++) {
-            let repo = login.github.repositories[i];
-            let a = document.createElement('a');
-            let link = `https://github.com/${gh_org}/${repo}`;
-            a.setAttribute("href", link);
-            a.innerText = link;
-            let li = document.createElement('li');
-            li.appendChild(a);
-            ul.appendChild(li);
-        }
-    }
+    if (!formdata.action || formdata.action == 'preferences') show_page_profile(canvas, login);
 }
 
 
 
 function begin_oauth_github() {
-    let oauth_url = encodeURIComponent("https://localhost.apache.org/boxer.html?action=oauth&key=github&state=" + state);
-    let ghurl = `https://github.com/login/oauth/authorize?client_id=${gh_client_id}&redirect_uri=${oauth_url}&scope=read%3Aorg%2C%20repo%2C%20user%3Aemail`;
+    let oauth_url = encodeURIComponent(`https://${hostname}/boxer.html?action=oauth&key=github&state=` + state);
+    let ghurl = `https://github.com/login/oauth/authorize?client_id=${gh_client_id}&redirect_uri=${oauth_url}&scope=read%3Aorg%2C%20repo`;
     console.log(ghurl);
     location.href = ghurl;
 }
