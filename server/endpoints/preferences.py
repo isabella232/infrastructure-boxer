@@ -32,7 +32,7 @@ async def process(
         for p in server.data.people:
             if p.asf_id == session.credentials.uid:
                 github_data = {
-                    "repositories": [x.filename for x in p.repositories],
+                    "repositories": [x.filename for x in p.repositories if x.filename in server.data.github_repos],
                     "mfa": p.github_mfa,
                     "login": p.github_login,
                 }
