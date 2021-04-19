@@ -7,6 +7,7 @@ let hostname = location.hostname;
 let txt = (a) => document.createTextNode(a);
 let br = (a) => document.createElement('br');
 let h2 = (a) => {let x = document.createElement('h2'); x.innerText = a ? a : ""; return x}
+let h1 = (a) => {let x = document.createElement('h1'); x.innerText = a ? a : ""; return x}
 
 
 function blurbg(blur = false) {
@@ -261,7 +262,113 @@ function setup_step_three_mfa(canvas, login) {
 }
 
 
+let search_timer = null;
+let search_query = "";
+let previous_query = "";
 
+async function search_fetch(obj) {
+    if (search_query == previous_query) return;
+    previous_query = search_query;
+    obj.innerHTML = "";
+    let res = await GET('api/users.json?query=' + search_query);
+    history.pushState({}, "Search Results", 'boxer.html?action=search&query=' + search_query);
+    if (res.results) {
+        for (let i = 0; i < res.results.length; i++) {
+            let result = res.results[i];
+            let tr = document.createElement('tr');
+
+            let td;
+            // ASF ID
+            td = document.createElement('td');
+            td.innerText = result.asf_id;
+            tr.appendChild(td);
+
+            // GitHub ID
+            td = document.createElement('td');
+            td.innerText = result.github_id;
+            tr.appendChild(td);
+
+            // GitHub MFA
+            td = document.createElement('td');
+            let img = document.createElement('img');
+            img.style.height = "16px";
+            if (result.github_mfa) {
+                img.setAttribute('src', 'images/mfa_enabled.png');
+            } else {
+                img.setAttribute('src', 'images/mfa_disabled.png');
+            }
+            td.appendChild(img);
+            tr.appendChild(td);
+
+            // GitHub repos
+            td = document.createElement('td');
+            td.innerText = result.repositories.length;
+            tr.appendChild(td);
+
+            // GitHub status
+            td = document.createElement('td');
+            td.innerText = "Accounts linked";
+            if (!result.github_id || result.github_id.length == 0) {
+                td.innerText = "Person has not authed on GitHub yet";
+            }
+            else if (result.github_invited == false) {
+                td.innerText = "Person is not part of GiHub org yet";
+            } else if (result.github_mfa == false) {
+                td.innerText = "Person needs to enable MFA on GitHub";
+            }
+            tr.appendChild(td);
+
+            obj.appendChild(tr);
+        }
+    }
+}
+
+function search_result(obj, val) {
+    if (search_timer) {
+        window.clearTimeout(search_timer);
+    }
+    search_query = val;
+    search_timer = window.setTimeout(() => search_fetch(obj), 250);
+}
+
+
+function search_page(canvas, query) {
+    canvas.innerHTML = "";
+    let header = h1("User search");
+    canvas.appendChild(header);
+    let inp = document.createElement('input');
+    inp.setAttribute('placeholder', "Enter an Apache or GitHub ID");
+    inp.value = query;
+    canvas.appendChild(inp);
+    let table = document.createElement('table');
+    table.setAttribute('class', 'striped');
+    table.style.background = '#bbb';    
+    let tr = document.createElement('tr');
+    let th;
+    th = document.createElement('th');
+    th.innerText = "Apache ID";
+    tr.appendChild(th);
+    th = document.createElement('th');
+    th.innerText = "GitHub ID";
+    tr.appendChild(th);
+    th = document.createElement('th');
+    th.innerText = "MFA";
+    tr.appendChild(th);
+    th = document.createElement('th');
+    th.innerText = "Repos";
+    tr.appendChild(th);
+    th = document.createElement('th');
+    th.innerText = "Status";
+    tr.appendChild(th);
+    table.appendChild(tr);
+    let results = document.createElement('tbody');
+    table.appendChild(results);
+    canvas.appendChild(table);
+    inp.addEventListener('keyup', (x) => search_result(results, x.target.value));
+    if (query && query.length) {
+        search_result(results, query);
+    }
+}
 
 
 async function prime() {
@@ -317,14 +424,19 @@ async function prime() {
         return
     }
 
-    if (!formdata.action || formdata.action == 'preferences') show_page_profile(canvas, login);
+    if (!formdata.action || formdata.action == 'preferences') {
+        show_page_profile(canvas, login);
+        return
+    } else if (formdata.action == 'search') {
+        search_page(canvas, formdata.query||"");
+    }
 }
 
 
 
 function begin_oauth_github() {
     let oauth_url = encodeURIComponent(`https://${hostname}/boxer.html?action=oauth&key=github&state=` + state);
-    let ghurl = `https://github.com/login/oauth/authorize?client_id=${gh_client_id}&redirect_uri=${oauth_url}&scope=read%3Aorg%2C%20repo`;
+    let ghurl = `https://github.com/login/oauth/authorize?client_id=${gh_client_id}&redirect_uri=${oauth_url}&scope=read%3Auser`;
     console.log(ghurl);
     location.href = ghurl;
 }
