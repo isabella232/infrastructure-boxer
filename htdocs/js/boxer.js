@@ -31,15 +31,21 @@ async function POST(url = '', data = {}) {
 }
 
 async function GET(url = '') {
-    const response = await fetch(url, {
+
+    let js = fetch(url, {
         method: 'GET',
         mode: 'cors',
         cache: 'no-cache',
         credentials: 'same-origin',
         redirect: 'follow',
         referrerPolicy: 'no-referrer',
-    });
-    return response.json();
+    }).then((response) => response.json()).catch(() => {
+            let canvas = document.getElementById('main');
+            canvas.innerHTML = "";
+            canvas.innerText = "There was a problem contacting the Boxer backend service, please try again. If this problem persists, please inform ASF Infrastructure at: users@infra.apache.org";
+        }
+    );
+    return js
 }
 
 function logout() {
@@ -93,19 +99,15 @@ function invite_github(canvas) {
     )
 }
 
-function show_page_github_invite(canvas) {
-    init_step(canvas, 2)
-    canvas.appendChild(h2("GitHub Organization Membership"))
-    canvas.appendChild(txt("You do not appear to be a part of the Apache GitHub organization yet. "))
-    canvas.appendChild(document.createElement('br'));
-    canvas.appendChild(document.createElement('br'));
-    let a = document.createElement("button");
-    a.addEventListener("click", () => invite_github(canvas));
-    a.innerText = "Send GitHub Invitation!";
-    canvas.appendChild(document.createTextNode('Click this button receive an invitation so you can gain write-access on GitHub: '));
-    canvas.appendChild(a);
-
+function unlink_github() {
+    if (confirm("Are you sure you wish to unlink your GitHub account? You will lose all GitHub write-access on your current account if so. You may re-link this or another account once you have unlinked.")) {
+        GET("api/invite?unlink=true").then(() => {
+            alert("Your GitHub account has been unlinked. Please re-authenticate to link to a new or previous GitHub account.");
+            location.reload();
+        })
+    }
 }
+
 
 function show_page_profile(canvas, login) {
     canvas.innerText = "";
@@ -138,10 +140,10 @@ function show_page_profile(canvas, login) {
         iconimg.setAttribute('src', 'images/asf.png');
         iconimg.style.height = '24px';
         icon.appendChild(iconimg);
-        let txt = document.createElement('td');
-        txt.innerText = `Authed at ASF as: ${login.credentials.uid}`;
+        let xtxt = document.createElement('td');
+        xtxt.innerText = `Authenticated at ASF as: ${login.credentials.uid}`;
         tr.appendChild(icon);
-        tr.appendChild(txt);
+        tr.appendChild(xtxt);
         boxerstatus.appendChild(tr);
     }
 
@@ -154,39 +156,16 @@ function show_page_profile(canvas, login) {
         iconimg.setAttribute('src', 'images/github.png');
         iconimg.style.height = '24px';
         icon.appendChild(iconimg);
-        let txt = document.createElement('td');
-        txt.innerText = `Authed at GitHub as: ${login.github.login}`;
+        let xtxt = document.createElement('td');
+        xtxt.innerText = `Authenticated at GitHub as: ${login.github.login} (`;
+        let unlink = document.createElement('a');
+        unlink.setAttribute('href', '#');
+        unlink.innerText = "unlink account";
+        unlink.addEventListener('click', unlink_github);
+        xtxt.appendChild(unlink);
+        xtxt.appendChild(txt(")"));
         tr.appendChild(icon);
-        tr.appendChild(txt);
-        boxerstatus.appendChild(tr);
-    }
-
-    // GitHub MFA
-    if (login.github.mfa) {
-        let tr = document.createElement('tr');
-        let icon = document.createElement('td');
-        icon.style.textAlign = 'center';
-        let iconimg = document.createElement('img');
-        iconimg.setAttribute('src', 'images/mfa_enabled.png');
-        iconimg.style.height = '24px';
-        icon.appendChild(iconimg);
-        let txt = document.createElement('td');
-        txt.innerText = "GitHub MFA status: Enabled";
-        tr.appendChild(icon);
-        tr.appendChild(txt);
-        boxerstatus.appendChild(tr);
-    } else {
-        let tr = document.createElement('tr');
-        let icon = document.createElement('td');
-        icon.style.textAlign = 'center';
-        let iconimg = document.createElement('img');
-        iconimg.setAttribute('src', 'images/mfa_disabled.png');
-        iconimg.style.height = '24px';
-        icon.appendChild(iconimg);
-        let txt = document.createElement('td');
-        txt.innerText = "GitHub MFA status: DISABLED";
-        tr.appendChild(icon);
-        tr.appendChild(txt);
+        tr.appendChild(xtxt);
         boxerstatus.appendChild(tr);
     }
 
@@ -230,9 +209,7 @@ function show_page_profile(canvas, login) {
 }
 
 function init_step(canvas, step) {
-
     canvas.innerHTML = "";
-
     let header = document.createElement('h1');
     header.style.textAlign = "center";
     header.style.width = "100%";
@@ -242,6 +219,50 @@ function init_step(canvas, step) {
     header.appendChild(verified);
     canvas.appendChild(header);
 }
+
+
+
+// Step one in setup: Auth with GitHub
+function setup_step_one_github_auth(canvas, login) {
+    init_step(canvas, 1);
+    canvas.appendChild(h2("Authenticate on GitHub"));
+    canvas.appendChild(txt("Please authenticate yourself on GitHub to proceed. This will ensure we know who you are in GitHub, and can invite you to the organization in case you are not apart of Apache on GitHub yet: "));
+    canvas.appendChild(document.createElement('br'));
+    let a = document.createElement("button");
+    a.addEventListener("click", begin_oauth_github);
+    a.innerText = "Authenticate with GitHub";
+    canvas.appendChild(a);
+}
+
+// Step two in setup: Invite to GitHub Org
+function setup_step_two_github_org(canvas, login) {
+    init_step(canvas, 2);
+    canvas.appendChild(h2("GitHub Organization Membership"));
+    canvas.appendChild(txt("You do not appear to be a part of the Apache GitHub organization yet. "));
+    canvas.appendChild(document.createElement('br'));
+    canvas.appendChild(document.createElement('br'));
+    let a = document.createElement("button");
+    a.addEventListener("click", () => invite_github(canvas));
+    a.innerText = "Send GitHub Invitation!";
+    canvas.appendChild(document.createTextNode('Click this button to receive an invitation so you can gain write-access on GitHub: '));
+    canvas.appendChild(a);
+}
+
+// Step three in setup: verify MFA
+function setup_step_three_mfa(canvas, login) {
+    canvas.innerHTML = "";
+    init_step(canvas, 3)
+    canvas.appendChild(h2("Multi-factor Authentication Check"))
+    canvas.appendChild(txt("You do not appear to have enabled Multi-factor Authentication (MFA) on GitHub yet. "));
+    canvas.appendChild(br());
+    canvas.appendChild(txt("Please enable this and reload this page, as we cannot grant write access to GitHub repositories to accounts without MFA enabld."));
+    canvas.appendChild(br());
+    canvas.appendChild(txt("If you already have MFA enabled, it may take up to five minutes for the Boxer service to recognize it."));
+}
+
+
+
+
 
 async function prime() {
 
@@ -278,41 +299,21 @@ async function prime() {
     }
 
 
-
-
     // Not authed via GitHub yet
     if (!login.github || !login.github.login) {
-        init_step(canvas, 1)
-        canvas.appendChild(h2("Authenticate on GitHub"))
-        canvas.appendChild(txt("Please authenticate yourself on GitHub to proceed. This will ensure we know who you are in GitHub, and can invite you to the organization in case you are not apart of Apache on GitHub yet: "))
-        canvas.appendChild(document.createElement('br'));
-        let a = document.createElement("button");
-        a.addEventListener("click", begin_oauth_github);
-        a.innerText = "Authenticate with GitHub";
-        canvas.appendChild(a);
+        setup_step_one_github_auth(canvas, login);
         return
     }
 
     // Authed via GitHub but not in Apache Org yet
     if (login.credentials && !login.credentials.github_org_member) {
-        show_page_github_invite(canvas);
-        return
-    }
-    // Authed via GitHub but not linked
-    if (!login.github || login.credentials.github_login != login.github.login) {
-        canvas.innerText = `You are authed on GitHub as ${login.credentials.github_login}, but this account has not been linked to your Apache account yet.`;
+        setup_step_two_github_org(canvas, login);
         return
     }
 
+    // MFA not enabled yet
     if (!login.github.mfa) {
-        canvas.innerHTML = "";
-        init_step(canvas, 3)
-        canvas.appendChild(h2("Multi-factor Authentication Check"))
-        canvas.appendChild(txt("You do not appear to have enabled Multi-factor Authentication (MFA) on GitHub yet. "));
-        canvas.appendChild(br());
-        canvas.appendChild(txt("Please enable this and reload this page, as we cannot grant write access to GitHub repositories to accounts without MFA enabld."));
-        canvas.appendChild(br());
-        canvas.appendChild(txt("If you already have MFA enabled, it may take up to five minutes for the Boxer service to recognize it."));
+        setup_step_three_mfa(canvas, login);
         return
     }
 
