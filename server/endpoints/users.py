@@ -35,6 +35,7 @@ async def process(
                         "asf_id": person.asf_id,
                         "github_id": person.github_login,
                         "github_mfa": person.github_mfa,
+                        "github_invited": person.github_login in server.data.mfa,
                         "name": person.real_name,
                         "repositories": [x.filename for x in person.repositories]
                     })
