@@ -39,6 +39,7 @@ async def process(
     prefs: dict = {"credentials": {}, "github": github_data}
     if session and session.credentials:
         prefs['credentials'] = {
+            "admin": session.credentials.admin,
             "uid": session.credentials.uid,
             "email": session.credentials.email,
             "fullname": session.credentials.name,

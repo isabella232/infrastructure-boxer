@@ -37,7 +37,7 @@ class SessionCredentials:
         self.uid: str = kwargs.get("uid", "")
         self.name: str = kwargs.get("name", "")
         self.email: str = kwargs.get("email", "")
-        self.admin: bool = False
+        self.admin: bool = kwargs.get("admin", False)
         self.github_login = kwargs.get("github_login", None)
         self.github_id = 0
 
