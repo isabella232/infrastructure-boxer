@@ -28,11 +28,11 @@ class Committer:
         if row:
             self.github_login = row["githubid"]
             self.github_mfa = bool(row["mfa"])
-            self.real_name = "Foo Bar"
+            self.real_name = ""
         else:
             self.github_login = None
             self.github_mfa = False
-            self.real_name = "Unknown"
+            self.real_name = ""
 
     def __repr__(self):
         return self.asf_id
