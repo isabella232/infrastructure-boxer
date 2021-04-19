@@ -227,7 +227,7 @@ function init_step(canvas, step) {
 function setup_step_one_github_auth(canvas, login) {
     init_step(canvas, 1);
     canvas.appendChild(h2("Authenticate on GitHub"));
-    canvas.appendChild(txt("Please authenticate yourself on GitHub to proceed. This will ensure we know who you are in GitHub, and can invite you to the organization in case you are not apart of Apache on GitHub yet: "));
+    canvas.appendChild(txt("Please authenticate yourself on GitHub to proceed. This will ensure we know who you are in GitHub, and can invite you to the organization in case you are not a part of Apache on GitHub yet: "));
     canvas.appendChild(document.createElement('br'));
     let a = document.createElement("button");
     a.addEventListener("click", begin_oauth_github);
@@ -273,6 +273,9 @@ async function search_fetch(obj) {
     let res = await GET('api/users.json?query=' + search_query);
     history.pushState({}, "Search Results", 'boxer.html?action=search&query=' + search_query);
     if (res.results) {
+        if (res.results.length == 0) {
+            obj.innerText = `No results matching ${search_query} could be found.`;
+        }
         for (let i = 0; i < res.results.length; i++) {
             let result = res.results[i];
             let tr = document.createElement('tr');
@@ -290,6 +293,7 @@ async function search_fetch(obj) {
 
             // GitHub MFA
             td = document.createElement('td');
+            td.style.textAlign = 'center';
             let img = document.createElement('img');
             img.style.height = "16px";
             if (result.github_mfa) {
@@ -302,6 +306,7 @@ async function search_fetch(obj) {
 
             // GitHub repos
             td = document.createElement('td');
+            td.style.textAlign = 'right';
             td.innerText = result.repositories.length;
             tr.appendChild(td);
 
@@ -309,12 +314,12 @@ async function search_fetch(obj) {
             td = document.createElement('td');
             td.innerText = "Accounts linked";
             if (!result.github_id || result.github_id.length == 0) {
-                td.innerText = "Person has not authed on GitHub yet";
+                td.innerHTML = "Not authed on GitHub <sup>[1]</sup>";
             }
             else if (result.github_invited == false) {
-                td.innerText = "Person is not part of GiHub org yet";
+                td.innerHTML = "Not part of GiHub org <sup>[2]</sup>";
             } else if (result.github_mfa == false) {
-                td.innerText = "Person needs to enable MFA on GitHub";
+                td.innerHTML= "MFA not enabled on GitHub <sup>[3]</sup>";
             }
             tr.appendChild(td);
 
@@ -342,7 +347,7 @@ function search_page(canvas, query) {
     canvas.appendChild(inp);
     let table = document.createElement('table');
     table.setAttribute('class', 'striped');
-    table.style.background = '#bbb';    
+
     let tr = document.createElement('tr');
     let th;
     th = document.createElement('th');
@@ -368,6 +373,33 @@ function search_page(canvas, query) {
     if (query && query.length) {
         search_result(results, query);
     }
+
+    let p = document.createElement('p');
+    p.innerText = "Detailed debugging help:";
+    canvas.appendChild(p);
+    let ul = document.createElement('ul');
+    ul.setAttribute('class', 'striped');
+    ul.style.maxWidth = "800px";
+    let li;
+
+    li = document.createElement('li');
+    li.innerText = "[0] Accounts linked: All is good, nothing to do here.";
+    ul.append(li);
+
+    li = document.createElement('li');
+    li.innerText = "[1] Not authed on GitHub: The user exists in LDAP, but has not used the Boxer app to authenticate with GitHub yet (so we don't know their GitHub login). To fix, the user should use boxer.html to authenticate with GitHub and follow the remaining steps.";
+    ul.append(li);
+
+    li = document.createElement('li');
+    li.innerText = `[2] Not part of GiHub org: The user has completed the ASF and GitHub OAuth steps, but have not been invited to the ASF GitHub organization yet, or have not accepted the invitation. User should check https://github.com/orgs/${gh_org}/invitation for a pending invite, or follow the boxer.html guide to sending an invitation.`;
+    ul.append(li);
+
+    li = document.createElement('li');
+    li.innerText = "[3] MFA not enabled: The user is a part of the Apache GitHub organization, but has not enabled Multi-Factor Authentication yet. This is a required step in order to gain write-access.";
+    ul.append(li);
+
+    canvas.appendChild(ul);
+
 }
 
 
