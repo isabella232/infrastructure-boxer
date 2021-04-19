@@ -468,7 +468,7 @@ async function prime() {
 
 function begin_oauth_github() {
     let oauth_url = encodeURIComponent(`https://${hostname}/boxer.html?action=oauth&key=github&state=` + state);
-    let ghurl = `https://github.com/login/oauth/authorize?client_id=${gh_client_id}&redirect_uri=${oauth_url}&scope=read%3Auser`;
+    let ghurl = `https://github.com/login/oauth/authorize?client_id=${gh_client_id}&redirect_uri=${oauth_url}`;
     console.log(ghurl);
     location.href = ghurl;
 }
