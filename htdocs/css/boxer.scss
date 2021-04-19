@@ -308,6 +308,15 @@ ul.striped {
     border-top-left-radius: 4px;
 }
 
+.striped td {
+    padding: 6px;
+}
+
+.striped th {
+    background: #333;
+    color: white;
+    padding: 4px;
+}
 
 button {
     background: #4477a1;
