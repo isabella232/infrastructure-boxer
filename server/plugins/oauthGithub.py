@@ -27,6 +27,9 @@ async def process(
                  if 'access_token' in response:
                     async with session.get("https://api.github.com/user", headers={'Authorization': "token %s" % response['access_token']}) as rv:
                         js = await rv.json()
+                        # Check for API rate limit exceeded, this is VERY RARE and a per-login issue. We cannot fix
+                        if 'message' in js and 'API rate limit exceeded' in js['message']:
+                            raise AssertionError("API rate limit reached for your personal account. Please try again later.")
                         js["oauth_domain"] = "github.com"
                         # Full name and email address might not always be available to us. Fake it till you make it.
                         js["name"] = js.get("name", js["login"])
