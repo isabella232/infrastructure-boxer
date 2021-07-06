@@ -193,7 +193,7 @@ function show_page_profile(canvas, login) {
                 ul.appendChild(li);
             }
         } else {
-            canvas.appendChild(document.createTextNode("You do not appear to have access to any git repositories right now."));
+            canvas.appendChild(document.createTextNode("You do not appear to have access to any git repositories right now. If you just linked your accounts, please allow a few minutes for the system to register your new repository access list."));
         }
     } else {
         canvas.appendChild(document.createTextNode("You need to enable multi-factor authentication at GitHub to get write access to repositories there."));
